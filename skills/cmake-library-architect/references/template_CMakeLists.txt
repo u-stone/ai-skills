@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.14)
+project(MyProject VERSION 1.0.0 LANGUAGES CXX)
+
+# --- Options ---
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(BUILD_TESTS "Build unit tests" ON)
+
+# --- Library Target ---
+add_library(MyProject
+    src/MyClass.cpp
+    # ...
+)
+
+# --- Alias (FetchContent Friendly) ---
+add_library(MyProject::MyProject ALIAS MyProject)
+
+# --- Include Directories ---
+target_include_directories(MyProject
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+# --- Compiler Definitions ---
+# 1. Windows DLL Export Symbol
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(MyProject PROPERTIES 
+        DEFINE_SYMBOL MyProject_EXPORTS
+    )
+endif()
+
+# 2. Static Build Flag (Optional, if using template_Export.h style)
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(MyProject PUBLIC MY_PROJECT_STATIC)
+endif()
+
+# --- Symbol Visibility (Linux/macOS) ---
+set_target_properties(MyProject PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
+)
+
+# --- Testing ---
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
