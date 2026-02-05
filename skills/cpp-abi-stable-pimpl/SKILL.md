@@ -102,6 +102,14 @@ void MyClass::DoSomething() {
 }
 ```
 
+## Advanced Strategies
+Depending on your specific needs (performance vs. compatibility), consult these guides:
+
+*   **[Forward Compatibility](references/forward_compat.md)**: How to plan for future API changes.
+*   **[C-Style Interop](references/c_wrapper.md)**: Exposing your class to C, Python, or C#.
+*   **[Fast PIMPL](references/fast_pimpl.md)**: Zero-overhead stack-allocated PIMPL.
+*   **[Modern Smart Pointers](references/smart_pimpl.md)**: Using `unique_ptr` safely in DLLs.
+
 ## Checklist
 - [ ] Forward declare `struct Impl` in the header.
 - [ ] Use a raw pointer (`Impl*`) for the member to avoid MSVC C4251.
