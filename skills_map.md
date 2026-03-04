@@ -11,6 +11,7 @@ Ideally, the `skill-master` skill should be used to maintain this file automatic
 | **cmake-library-architect** | 0.1.0 | 2026-02-05 | Active | None | Guidelines for architecting professional C++ libraries with CMake. |
 | **cpp_cmake_engineering** | 0.1.0 | 2026-03-04 | Active | None | Add complete engineering infrastructure to an existing C++ CMake project. |
 | **project-launcher** | 0.1.0 | 2026-03-04 | Active | None | 自动识别项目类型并应用 ~/.gemini/rules/ 下的规则模版。 |
+| **dmp-learning-accelerator** | 1.0.0 | 2026-03-04 | Active | None | DMP 学习型项目快速启动方法论：门控流程+费曼笔记+原子提交+间隔复习。适用于任意编程领域。 |
 
 ## Schema
 - **Version**: Semantic Versioning (Major.Minor.Patch)
