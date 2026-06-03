@@ -1,29 +1,51 @@
 # Bundled Config Files
 
-This directory contains config files bundled with the `cpp-game-sdk-coding-standard` skill.
+This directory contains fallback config files bundled with `cpp-game-sdk-coding-standard`.
 
-## Files
+Files:
 
-- `.clang-format` - formatting rules for C/C++ and related languages.
-- `.editorconfig` - editor-neutral charset, indentation, whitespace, and line-ending rules.
-- `.gitattributes` - Git text normalization and binary/LFS tracking rules.
+- `.clang-format` — C/C++ formatting defaults.
+- `.editorconfig` — editor-neutral charset, indentation, whitespace, and line-ending rules.
+- `.gitattributes` — Git text normalization and binary/LFS tracking defaults.
+
+---
+
+## Important
+
+These files are defaults, not universal policy.
+
+Before copying them into a repository:
+
+1. check whether the target repository already has config files;
+2. compare style and platform requirements;
+3. confirm line-ending policy;
+4. confirm Git LFS is installed and desired;
+5. confirm binary, asset, and package artifact patterns;
+6. avoid replacing existing project-specific rules unless explicitly requested.
+
+---
 
 ## How to apply
 
-For a new repository, copy the files to the repository root:
+For a new repository, copy files to the repository root:
 
 ```text
 <repo>/.clang-format
 <repo>/.editorconfig
 <repo>/.gitattributes
-```
+````
 
-Before copying, compare them with any existing files in the target repository. Existing project-specific rules take precedence over these bundled defaults.
+For an existing repository, merge deliberately instead of blindly overwriting.
+
+---
 
 ## Migration checks
 
-- Confirm the indentation width matches the target team's code style.
-- Confirm the formatter language sections match the languages used by the repository.
-- Confirm line endings are compatible with platform scripts.
-- Confirm Git LFS patterns match the target repository's asset and binary policy.
-- Confirm generated directories, third-party binaries, and package artifacts are not accidentally tracked as text.
+* indentation width matches team style;
+* column limit is acceptable;
+* formatter language sections match repository languages;
+* scripts use correct CRLF/LF policy;
+* binary files are not treated as text;
+* source files are normalized as text;
+* Git LFS patterns match repository asset policy;
+* generated directories and package artifacts are not accidentally tracked.

@@ -1,12 +1,17 @@
 # plan-execute-verify-workflow
 
-This folder is a shareable skill package for running complex AI-assisted work
-with planner, executor, reviewer, evidence, and recovery roles.
+A portable OpenCode skill package for reliable AI-assisted work using planning, bounded execution, evidence, recovery, and targeted review.
 
-It packages a portable version of the Prometheus/Atlas-style workflow so it can
-be copied into another repository or used without the Oh My OpenCode plugin set.
+It is designed to avoid two common failure modes:
 
-## What is included
+1. ad-hoc implementation with no verification;
+2. heavyweight workflow bureaucracy for tasks that should stay lightweight.
+
+Default to Lite mode. Escalate only when the task risk justifies it.
+
+---
+
+## Package layout
 
 ```text
 .opencode/skills/plan-execute-verify-workflow/
@@ -14,108 +19,155 @@ be copied into another repository or used without the Oh My OpenCode plugin set.
 ├── README.md
 └── references/
     └── plan-execute-verify-workflow-reference.md
-```
+````
 
-- `SKILL.md`
-  - short operational entrypoint discovered by OpenCode;
-  - describes when to use the workflow and the mandatory loop.
-- `references/plan-execute-verify-workflow-reference.md`
-  - long-form reference for copying, migration, and human review.
-
-## What this skill is for
-
-Use this skill when you want to:
-
-- turn a user goal into a structured execution plan;
-- run that plan through small verified tasks;
-- persist evidence and decisions across sessions;
-- prevent lost background work and partial task launches;
-- require independent final review before completion.
-
-## How to use it in this repository
-
-Project-local placement:
+Minimum required file:
 
 ```text
 .opencode/skills/plan-execute-verify-workflow/SKILL.md
 ```
 
-Agents can load it by name:
-
-```text
-plan-execute-verify-workflow
-```
-
-Typical use cases:
-
-- "Use `plan-execute-verify-workflow` to plan and execute this feature."
-- "Convert this task into a Prometheus/Atlas-style plan, but keep it portable."
-- "Create a plan with evidence gates and final reviewers."
-
-## Do not use this skill for
-
-- defining repository-wide operating rules;
-- extracting a reusable engineering protocol from local conventions;
-- language-specific C++ or CMake implementation rules.
-
-## Prefer these skills instead
-
-- `agentic-project-playbook` for repository-specific operating playbooks;
-- `portable-authoring-protocol` for protocol extraction and migration;
-- `cpp-game-sdk-coding-standard` for implementation-level C++ and CMake rules.
-
-## How to copy it to another repository
-
-Copy the whole folder into the target repository:
-
-```text
-<target-repo>/.opencode/skills/plan-execute-verify-workflow/
-```
-
-Minimum required file:
-
-```text
-<target-repo>/.opencode/skills/plan-execute-verify-workflow/SKILL.md
-```
-
 Recommended copy is the whole folder so the long reference stays available.
 
-## What to customize after copying
+---
 
-Replace project bindings:
+## What this skill is for
 
-- build and test commands;
-- style and documentation rules;
-- evidence directory;
-- commit policy;
-- task state file format;
-- background task persistence mechanism;
-- reviewer names or tools;
-- generated/local files that must not be committed.
+Use this skill to:
 
-Keep the portable core unchanged: plan first, execute in small verified tasks,
-save evidence, run independent reviews, and treat session recovery as normal.
+* convert a complex user goal into an executable plan;
+* execute one verified task at a time;
+* keep work recoverable across sessions;
+* preserve evidence for completed work;
+* prevent hidden scope creep;
+* run targeted independent review before closure.
 
-## Source of truth
+---
 
-This skill is defined by:
+## What this skill is not for
 
-- `SKILL.md`
-- `references/plan-execute-verify-workflow-reference.md`
+Do not use it as the primary skill for:
 
-It was derived from:
+* tiny direct edits;
+* repository-wide coding standards;
+* language-specific implementation rules;
+* extracting reusable methodology from one project;
+* quick explanations or Q&A.
 
-- `docs/guides/agentic_task_execution_methodology.md`
-- `.sisyphus/` plan, notepad, and evidence records
+Prefer specialized skills for those cases.
 
-If the methodology evolves, update both the guide and this skill package.
+---
 
-## Verification
+## Workflow modes
 
-After editing this skill, verify:
+| Mode     | Use when                                                          | Review level                 | Recovery level          |
+| -------- | ----------------------------------------------------------------- | ---------------------------- | ----------------------- |
+| Lite     | localized, low-risk work                                          | none or self-check           | minimal                 |
+| Standard | medium multi-file work                                            | one focused review if needed | compact state           |
+| Critical | high-risk, multi-session, migration, infra, security, concurrency | targeted reviewers           | snapshot-first recovery |
 
-- `SKILL.md` has valid YAML frontmatter;
-- the folder name matches the skill name;
-- the bundled reference path exists;
-- the docs guide link in `docs/README.md` is present;
-- the reference still matches the current methodology.
+Use the lightest mode that is safe.
+
+---
+
+## Core artifacts
+
+### Compact state
+
+A short resume pointer for active work.
+
+```json
+{
+  "plan_id": "",
+  "mode": "standard",
+  "active_task": "T2",
+  "completed_tasks": ["T1"],
+  "blocked_tasks": [],
+  "pending_reviews": [],
+  "last_verified_task": "T1",
+  "next_action": "continue T2"
+}
+```
+
+### Structured evidence
+
+A compact proof record.
+
+```json
+{
+  "task_id": "T1",
+  "type": "test",
+  "command_or_surface": "npm test -- auth",
+  "result": "pass",
+  "summary": "Auth tests passed.",
+  "artifacts": []
+}
+```
+
+### Shared review manifest
+
+A reviewer input summary that prevents repeated full-context reads.
+
+```json
+{
+  "plan_summary": {},
+  "diff_summary": {},
+  "evidence_summary": {},
+  "risk_summary": {},
+  "review_requests": {}
+}
+```
+
+---
+
+## Recommended repository bindings
+
+When copying this skill into a repository, define:
+
+* where plans live;
+* where compact state lives;
+* where evidence lives;
+* canonical build/test/lint commands;
+* manual QA surfaces;
+* commit policy;
+* reviewer roles;
+* generated files that must not be committed;
+* local artifacts that must be ignored.
+
+Example layout:
+
+```text
+plans/
+state/
+evidence/
+notepads/
+```
+
+---
+
+## Migration checklist
+
+After copying:
+
+* [ ] Folder name matches `plan-execute-verify-workflow`.
+* [ ] `SKILL.md` has valid YAML frontmatter.
+* [ ] Reference path in metadata exists.
+* [ ] Repository-specific build/test/lint commands are documented.
+* [ ] Evidence and state locations are defined.
+* [ ] Commit policy is defined.
+* [ ] Generated/local files are excluded from commits.
+* [ ] One pilot task has been run in Lite or Standard mode.
+
+---
+
+## Verification checklist
+
+After editing this package:
+
+* [ ] `SKILL.md` remains short and operational.
+* [ ] Long examples stay in the reference file.
+* [ ] Workflow modes remain clear.
+* [ ] Retry budget exists.
+* [ ] Recovery starts from compact state.
+* [ ] Reviewers consume shared manifests before raw context.
+* [ ] Evidence remains structured and compact.

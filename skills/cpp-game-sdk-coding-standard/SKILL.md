@@ -1,131 +1,329 @@
 ---
 name: cpp-game-sdk-coding-standard
-description: Use when writing, reviewing, or refactoring C++17 native library or game-SDK code with target-based CMake, cross-platform targets, ABI-sensitive interfaces, IDE-visible target file layout, and performance/concurrency constraints.
+description: Use when writing, reviewing, or refactoring C++17 native library, native plugin, middleware, or game SDK code involving target-based CMake, cross-platform builds, ABI-sensitive public interfaces, ownership/lifetime rules, performance constraints, or bundled formatting/config migration.
 license: MIT
 compatibility: opencode
 metadata:
   audience: native-sdk-engineers
   workflow: cpp-game-sdk-development
   source: .opencode/skills/cpp-game-sdk-coding-standard/references/cpp-game-sdk-coding-standard-reference.md
+  modes:
+    - quick
+    - standard
+    - strict-sdk
 ---
 
 # C++ Game SDK Coding Standard
 
-## What I do
+A portable C++17 coding standard for game SDKs, native libraries, middleware, native plugins, and engine-adjacent modules.
 
-- Guide C++17 game SDK, native plugin, middleware, and engine-adjacent library work.
-- Keep public SDK boundaries ABI-stable while allowing modern C++ internally.
-- Apply target-based CMake, cross-platform build hygiene, and explicit dependency rules.
-- Preserve ownership, lifetime, threading, error handling, and performance constraints.
-- Use the bundled repository config files as formatting and text-normalization references.
+Use the lightest mode that safely satisfies the user request.
+
+---
 
 ## Use me when
 
-- generating or reviewing C++ game SDK code;
-- designing a C-style exported SDK API over an internal C++ implementation;
-- writing CMake targets, install rules, package exports, or dependency wiring;
-- choosing project layout for static/shared native libraries;
-- reviewing high-performance runtime, system programming, or cross-platform code;
+Use this skill for:
+
+- generating or reviewing C++17 SDK/native-library code;
+- designing exported C ABI over internal C++ implementation;
+- reviewing ABI, ownership, lifetime, threading, or error handling;
+- writing target-based CMake, install rules, package exports, or dependency wiring;
+- designing static/shared native library layout;
+- reviewing high-performance runtime or system programming code;
 - applying or migrating `.clang-format`, `.editorconfig`, or `.gitattributes` defaults.
 
 Typical triggers:
 
-- "review this C++ target / header / ABI boundary"
-- "write the CMake target for this native library or tool"
-- "fix this SDK-facing API / exported function design"
+- "review this C++ target/header/ABI boundary"
+- "write the CMake target for this SDK/native library"
+- "design a stable C API over this C++ implementation"
 - "make this Visual Studio target show the right headers and sources"
+- "check whether this SDK API is ABI-safe"
+- "apply the bundled formatter/config defaults"
 
-Do **not** use this as the primary skill for:
+---
+
+## Do not use me as the primary skill for
 
 - repository-wide operating playbooks;
-- extracting a portable engineering protocol;
-- planning and executing one complex task through review waves.
+- extracting reusable engineering protocols;
+- planning one complex implementation through planner/executor/reviewer waves;
+- non-C++ application logic with no native SDK, ABI, CMake, or performance concern.
 
 Prefer instead:
 
 - `agentic-project-playbook` for repository-specific operating rules;
 - `portable-authoring-protocol` for protocol extraction and migration;
-- `plan-execute-verify-workflow` for task execution methodology.
+- `plan-execute-verify-workflow` for complex task execution methodology.
 
-## First step: select development mode
+---
 
-Before generating code, CMake, SDK API, layout, or refactoring guidance, identify the target mode:
+## Mode selection
 
-1. **Business development** - readability, maintainability, iteration speed.
-2. **System programming** - OS handles, threads, files, sockets, plugins, ABI, RAII.
-3. **High-performance development** - cache behavior, hot paths, allocations, frame time.
-4. **Low-level library / SDK** - C ABI, symbol visibility, packaging, binary compatibility.
+Before generating code, CMake, SDK API, or review output, select one mode.
 
-If the user does not specify a mode, default to:
+### Quick mode
+
+Use for:
+
+- small code review;
+- small CMake correction;
+- naming/formatting check;
+- short answer.
+
+Output:
+
+- selected mode;
+- key finding or patch;
+- focused verification command.
+
+Do not load or restate the long reference unless needed.
+
+### Standard mode
+
+Use for:
+
+- normal SDK/native library implementation;
+- multi-file C++ or CMake changes;
+- cross-platform concerns;
+- ownership/threading/error-handling review.
+
+Output:
+
+- selected mode;
+- design summary;
+- code or patch;
+- CMake/build/test guidance;
+- relevant ABI/lifetime/thread-safety notes.
+
+### Strict SDK mode
+
+Use for:
+
+- public SDK ABI design;
+- exported functions or public headers;
+- shared library symbol visibility;
+- install/package exports;
+- binary compatibility or distribution;
+- security/concurrency/performance-sensitive SDK surface.
+
+Output must include:
+
+- ABI checklist;
+- public header documentation requirements;
+- ownership/lifetime rules;
+- error handling rules;
+- thread-safety notes;
+- export/symbol validation commands;
+- install/package verification when CMake exports changed.
+
+---
+
+## Development domain
+
+Also classify the technical domain:
+
+1. **Business development**
+   - readability, maintainability, iteration speed.
+
+2. **System programming**
+   - OS handles, files, sockets, threads, plugins, dynamic libraries, RAII.
+
+3. **High-performance development**
+   - hot paths, cache behavior, allocations, lock contention, frame time.
+
+4. **Low-level library / SDK**
+   - C ABI, symbol visibility, packaging, binary compatibility.
+
+If unspecified, default to:
 
 ```text
-Game business development + SDK-ready cross-platform design.
-```
+Standard mode + business development + SDK-ready cross-platform design.
+````
+
+Escalate to Strict SDK mode when public ABI, shared library exports, or SDK distribution is involved.
+
+---
+
+## Rule precedence
+
+Apply rules in this order:
+
+1. explicit user instruction;
+2. safety, correctness, and non-fabrication rules;
+3. repository-local instructions and project config;
+4. active `.clang-format`, `.editorconfig`, `.gitattributes`;
+5. this skill's portable defaults;
+6. historical or archived documents.
+
+If a repository-specific rule conflicts with this portable standard, the repository-specific rule wins inside that repository unless it is unsafe.
+
+---
 
 ## Hard rules
 
-- Use C++17 by default.
-- Use target-based CMake only.
-- Public exported SDK functions use C ABI: `extern "C"`, explicit export macros, no overloads.
-- Do not expose STL containers, templates, C++ exceptions, references, or public C++ classes as SDK ABI.
-- Use opaque handles for SDK objects and versionable POD structs for public config.
-- SDK-owned memory must be released through SDK-provided functions.
-- Public header files must document exported types and functions with Doxygen-style comments.
-- Wrap resources with RAII; never leak OS handles.
-- Do not throw exceptions across shared library or C ABI boundaries.
-- Avoid raw `new` / `delete` in business logic.
-- Avoid heap allocation, expensive logging, and lock contention in hot paths.
-- Never call user callbacks while holding locks.
-- Do not use global CMake include paths, link libraries, or compile options.
-- Do not apply project warning-as-error flags to third-party code.
+### C++ baseline
+
+* Use C++17 by default.
+* Prefer practical engineering code over pseudo-code.
+* Keep public headers minimal and stable.
+* Avoid compiler-specific extensions unless guarded.
+
+### Public SDK ABI
+
+* Exported SDK functions must use C ABI.
+* Use `extern "C"` and explicit export/calling-convention macros.
+* Do not expose STL containers, C++ exceptions, templates, references, overloads, or public C++ classes as SDK ABI.
+* Use opaque handles for SDK objects.
+* Use versionable POD structs for public configs when practical.
+* SDK-owned memory must be released through SDK-provided functions.
+* Public headers must document ownership, lifetime, nullability, threading, and error behavior.
+
+### Error handling
+
+* Public C API returns explicit result codes.
+* Validate pointer arguments.
+* Do not throw exceptions across C ABI or shared library boundaries.
+* If internal exceptions are allowed by the project, catch them at the SDK boundary and convert them to result codes.
+* If the repository forbids exceptions, use its result/error style.
+
+### Resource and lifetime
+
+* Use RAII internally.
+* Never leak OS handles.
+* Use `std::unique_ptr` for exclusive ownership.
+* Use `std::shared_ptr` only for true shared ownership.
+* Avoid raw `new` / `delete` in business logic.
+* Every create/acquire API needs a matching destroy/release rule.
+
+### Threading and callbacks
+
+* Document thread ownership and thread safety.
+* Do not access destroyed objects from background threads.
+* Do not hold locks while performing I/O.
+* Never call user callbacks while holding locks.
+* Avoid unbounded queues and unbounded thread creation.
+* Provide shutdown/cancellation when background work exists.
+
+### Performance
+
+* Avoid heap allocation in hot paths.
+* Avoid expensive logging/string formatting in frame loops.
+* Avoid lock contention in performance-sensitive paths.
+* State complexity, allocation behavior, and thread-safety assumptions for non-trivial algorithms.
+
+### CMake
+
+* Use target-based CMake only.
+* Do not use global `include_directories`, `link_libraries`, or global compile options.
+* Every module should be a target.
+* Use `target_compile_features(... cxx_std_17)` or equivalent.
+* Public headers must be installable when building an SDK.
+* Package exports should provide imported targets.
+* Do not apply project warning-as-error flags to third-party code.
+* Prefer imported/prebuilt targets for large compiled dependencies.
+* Use FetchContent only for small, header-only, test-only, or fast/stable dependencies.
+* IDE-facing targets should list local headers in `target_sources(...)`.
+
+---
 
 ## Naming and formatting
 
-- Follow the active project `.clang-format` first.
-- If no project formatter exists, use the bundled fallback in `references/config/.clang-format`.
-- Files use lowercase with underscores.
-- Internal C++ types and functions use `PascalCase`.
-- Internal variables use the project convention; for this skill's portable default, prefer `lower_snake_case` and member trailing underscores.
-- Exported C functions use lower snake case with an SDK prefix, for example `game_sdk_create`.
-- C API constants, enum values, and macros use uppercase SDK-prefixed names.
-- Never use `using namespace` in public headers.
-- In public headers, use Doxygen blocks with `@brief`, `@param`, `@return`, ownership/lifetime notes, and `@threadsafe` where applicable.
+* Follow active project `.clang-format` first.
+* If none exists, use `references/config/.clang-format` as a fallback.
+* Files use lowercase with underscores.
+* Internal C++ types use `PascalCase`.
+* Internal C++ functions use the project convention; portable default: `PascalCase`.
+* Portable default variables use `lower_snake_case`.
+* Class members use trailing underscore.
+* Exported C functions use lower snake case with an SDK prefix, e.g. `game_sdk_create`.
+* C API constants, enum values, and macros use uppercase SDK-prefixed names.
+* Never use `using namespace` in public headers.
+* Public SDK declarations use Doxygen comments with `@brief`, `@param`, `@return`, ownership/lifetime notes, and thread-safety notes.
 
-## CMake rules
+---
 
-- Require modern CMake and C++17 via target features.
-- Every module should be a target; expose usage requirements with `target_*` commands.
-- Every IDE-facing target must list its own implementation files **and its own
-  local headers** in `target_sources(...)` so generated Visual Studio / IDE
-  projects show the complete editable surface.
-- When a target depends on project-local headers from another module and those
-  headers are important for day-to-day editing or debugging, attach them to the
-  consuming target for **IDE visibility only** without changing the build graph.
-  Prefer `target_sources(PRIVATE ...)` and mark non-compiled dependency `.cpp`
-  files `HEADER_FILE_ONLY` when they must appear in the solution tree.
-- Mirror the target's logical layout with `source_group(...)` so headers and
-  visibility-only dependency files appear in predictable folders inside the IDE.
-- Support static and shared builds where SDK distribution requires it.
-- Use explicit visibility settings for non-Windows shared libraries.
-- Public headers must be installable and package exports should provide imported targets.
-- Prefer imported targets or prebuilt artifacts for large compiled dependencies.
-- Use FetchContent only for small, header-only, test-only, or fast/stable dependencies.
+## Public SDK API checklist
+
+For public headers and exported functions, verify:
+
+* C ABI only;
+* no exported C++ classes;
+* no STL/template/reference/exception ABI exposure;
+* explicit export macro;
+* explicit calling convention when needed;
+* opaque handles;
+* versionable config structs where useful;
+* result codes;
+* nullability documented;
+* ownership/lifetime documented;
+* thread safety documented;
+* create/destroy or acquire/release pairing;
+* SDK-owned memory release function;
+* symbol export validation command.
+
+---
+
+## CMake target checklist
+
+For CMake changes, verify:
+
+* target-based commands only;
+* no global include/link/compile pollution;
+* C++17 requirement is target-scoped;
+* public/private/interface dependencies are correct;
+* public headers are installable when required;
+* shared library visibility is explicit;
+* package export/import target works when required;
+* IDE-visible headers are listed in `target_sources`;
+* third-party warnings/options are isolated;
+* static/shared variant policy is clear.
+
+---
 
 ## Verification checklist
 
-When completing C++ SDK work, verify the relevant surface:
+Run only the relevant checks for the change.
 
-- format: `clang-format --dry-run -Werror <files>` or project equivalent;
-- build: configure and build Debug plus any requested shared/static variants;
-- tests: run `ctest --test-dir build --output-on-failure` or project equivalent;
-- ABI exports: validate symbols with `dumpbin`, `nm`, `readelf`, or `otool` when public SDK exports changed;
-- install/package: verify install rules and package discovery when CMake exports changed;
-- runtime/manual QA: run the actual example, CLI, plugin load, or API driver that exercises the change.
+* Format: `clang-format --dry-run -Werror <files>` or project equivalent.
+* Build: configure and build Debug; add Release/shared/static variants when relevant.
+* Tests: `ctest --test-dir build --output-on-failure` or project equivalent.
+* ABI exports: use `dumpbin`, `nm`, `readelf`, or `otool` when public exports changed.
+* Install/package: verify install rules and package discovery when CMake exports changed.
+* Runtime/manual QA: run the example, CLI, plugin load, or API driver that exercises the change.
 
-## Bundled references
+If a check is skipped, state why.
 
-- `references/cpp-game-sdk-coding-standard-reference.md` - long-form distilled standard.
-- `references/config/.clang-format` - bundled formatter config from this repository.
-- `references/config/.editorconfig` - bundled editor normalization config.
-- `references/config/.gitattributes` - bundled Git attributes and LFS policy.
-- `references/config/README.md` - how to apply and migrate the bundled config files.
+---
+
+## Output contract
+
+When generating or reviewing C++ SDK work, use this structure unless the user requested a shorter answer:
+
+1. selected mode and technical domain;
+2. design summary;
+3. file list or directory structure;
+4. code / patch / CMake;
+5. ABI and ownership notes;
+6. error handling notes;
+7. threading and performance notes when relevant;
+8. build/test/format commands;
+9. platform notes;
+10. risks or follow-up checks.
+
+For short answers, compress the structure but do not omit critical ABI, ownership, or safety risks.
+
+---
+
+## Reference loading policy
+
+Use `references/cpp-game-sdk-coding-standard-reference.md` when:
+
+* generating a new SDK skeleton;
+* designing public ABI;
+* changing install/package exports;
+* reviewing cross-platform or performance-sensitive code;
+* user asks for full standard or migration guidance.
+
+Do not load or restate the long reference for small localized fixes.

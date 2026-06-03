@@ -1,10 +1,16 @@
 # cpp-game-sdk-coding-standard
 
-This folder is a shareable OpenCode skill package for C++17 game SDK and native library development.
+A shareable OpenCode skill package for C++17 game SDK, native plugin, middleware, and native library development.
 
-It packages a practical coding standard for CMake-based, cross-platform game SDK work and bundles the repository formatting and text-normalization files that support the standard.
+It packages:
 
-## What is included
+- a short operational OpenCode skill entrypoint;
+- a long-form C++ SDK coding standard reference;
+- portable fallback config files for formatting and text normalization.
+
+---
+
+## Package layout
 
 ```text
 .opencode/skills/cpp-game-sdk-coding-standard/
@@ -17,104 +23,126 @@ It packages a practical coding standard for CMake-based, cross-platform game SDK
         ├── .editorconfig
         ├── .gitattributes
         └── README.md
-```
+````
 
-- `SKILL.md`
-  - the OpenCode skill entrypoint;
-  - contains the short operational rules, triggers, and verification checklist.
-- `references/cpp-game-sdk-coding-standard-reference.md`
-  - the long-form distilled reference derived from `docs/standards/C++ Game SDK Coding Standard Skill.md`;
-  - intended for deeper reading, migration, and team review.
-- `references/config/`
-  - bundled copies of the repository `.clang-format`, `.editorconfig`, and `.gitattributes` files;
-  - intended as copyable defaults for new C++ game SDK repositories.
+---
 
-## How to use it in this repository
+## What this skill is for
 
-Project-local placement is already correct:
+Use this skill for C++17 native SDK work involving:
 
-```text
-.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md
-```
+* public C ABI design;
+* internal C++ implementation;
+* CMake target design;
+* cross-platform native libraries;
+* static/shared SDK packaging;
+* symbol visibility;
+* ownership, lifetime, threading, and error handling;
+* high-performance runtime constraints;
+* portable formatting and text-normalization defaults.
 
-Agents can load it by name:
+---
 
-```text
-cpp-game-sdk-coding-standard
-```
+## What this skill is not for
 
-Typical use cases:
+Do not use this skill as the primary source for:
 
-- "Use `cpp-game-sdk-coding-standard` to design this native SDK API."
-- "Load `cpp-game-sdk-coding-standard` before reviewing this CMake target."
-- "Use `cpp-game-sdk-coding-standard` to create a portable C++ game SDK skeleton."
-- "Apply the bundled `.clang-format`, `.editorconfig`, and `.gitattributes` defaults to a new repo."
+* repository-wide day-to-day operating rules;
+* project management workflow;
+* multi-agent execution methodology;
+* non-C++ work with no native SDK/CMake/ABI concern.
 
-## Do not use this skill for
+Prefer:
 
-- defining how one repository should operate day to day;
-- extracting a portable engineering protocol from local conventions;
-- running one complex implementation task through planner/executor/reviewer waves.
+* `agentic-project-playbook` for repository operating rules;
+* `portable-authoring-protocol` for protocol extraction and migration;
+* `plan-execute-verify-workflow` for complex task execution methodology.
 
-## Prefer these skills instead
+---
 
-- `agentic-project-playbook` for repository-specific operating playbooks;
-- `portable-authoring-protocol` for protocol extraction and migration;
-- `plan-execute-verify-workflow` for task execution methodology.
+## Workflow modes
 
-## How to copy it to another repository
+| Mode       | Use when                                             | Output style                     |
+| ---------- | ---------------------------------------------------- | -------------------------------- |
+| Quick      | small review, small fix, formatting/naming check     | short finding + verification     |
+| Standard   | normal SDK/native library implementation             | design + code/CMake + checks     |
+| Strict SDK | public ABI, exports, packaging, binary compatibility | full ABI/checklist-driven output |
 
-Copy the whole folder into the target repository:
+Default to Standard mode unless the task is clearly tiny or public ABI-sensitive.
 
-```text
-<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/
-```
+---
+
+## How to use
+
+Project-local placement: `.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md`
+
+Agents can load it by name: `cpp-game-sdk-coding-standard`
+
+Example prompts:
+
+* "Use `cpp-game-sdk-coding-standard` to design this native SDK API."
+* "Review this public header for ABI safety."
+* "Write a CMake target for this native library."
+* "Create an SDK skeleton with install/package exports."
+* "Apply the bundled `.clang-format`, `.editorconfig`, and `.gitattributes` defaults to a new repo."
+
+---
+
+## Copying to another repository
+
+Copy the whole folder:
+
+`<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/`
 
 Minimum required file:
 
-```text
-<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md
-```
+`<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md`
 
-Recommended copy is the whole folder so the long-form reference and config files stay available.
+Recommended copy includes the reference and config files.
+
+---
 
 ## What to customize after copying
 
 Review and update:
 
-- SDK name and public C API prefix;
-- supported platforms and compiler baselines;
-- CMake minimum version and package/export naming;
-- static/shared library policy;
-- exception policy for internal implementation;
-- formatting preferences in `.clang-format`;
-- line-ending and charset policy in `.editorconfig`;
-- binary asset and LFS policy in `.gitattributes`.
+* SDK name;
+* public C API prefix;
+* supported platforms;
+* compiler baseline;
+* CMake minimum version;
+* package/export naming;
+* static/shared library policy;
+* exception policy;
+* formatter preferences;
+* line-ending policy;
+* LFS/binary asset policy;
+* generated/local artifact policy.
 
-## Source of truth
+---
 
-This skill was derived from:
+## Config migration warning
 
-```text
-docs/standards/C++ Game SDK Coding Standard Skill.md
-```
+Bundled config files are portable defaults, not universal truth.
 
-The bundled config files were copied from the repository root:
+Before copying `.clang-format`, `.editorconfig`, or `.gitattributes` into a target repository:
 
-```text
-.clang-format
-.editorconfig
-.gitattributes
-```
+1. check whether the target repository already has stronger local rules;
+2. compare indentation, line endings, charset, and formatter sections;
+3. confirm binary and asset file handling;
+4. confirm Git LFS is available and desired;
+5. avoid overwriting existing project-specific policy unless explicitly requested.
 
-If the standard evolves, update both the source standard and this skill package.
+---
 
-## Verification
+## Verification after editing this skill
 
-At minimum, verify these points after editing the skill:
+* [ ] `SKILL.md` has valid YAML frontmatter.
+* [ ] Folder name matches `cpp-game-sdk-coding-standard`.
+* [ ] `metadata.source` points to an existing reference file.
+* [ ] Bundled reference files exist.
+* [ ] Config files are intentional copies or deliberate adaptations.
+* [ ] README and SKILL agree on use cases and exclusions.
+* [ ] Strict SDK mode includes ABI, ownership, threading, and export checks.
 
-- `SKILL.md` has valid YAML frontmatter;
-- the folder name matches the skill name;
-- `metadata.source` points to an existing reference file;
-- all files listed in the bundled references section exist;
-- the config files are byte-for-byte intentional copies or deliberate adaptations.
+

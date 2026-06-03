@@ -1,172 +1,256 @@
 ---
 name: agentic-project-playbook
-description: Use when defining or refining how one specific repository should operate day to day — startup, precedence, CMake, verification, git discipline, OpenCode usage, and project-local bindings for long-running AI-assisted development.
+description: Use when defining, refining, or maintaining how one specific repository should operate day to day: startup, source-of-truth precedence, verification commands, git discipline, build-system bindings, local agent rules, and long-running AI-assisted development conventions.
 license: MIT
 compatibility: opencode
 metadata:
   audience: maintainers
   workflow: agentic-project-execution
   source: .opencode/skills/agentic-project-playbook/references/agentic-project-playbook-reference.md
+  modes:
+    - quick
+    - standard
+    - full
 ---
 
 # Agentic Project Playbook
 
+A repository-local operating playbook for AI-assisted software development.
+
+This skill binds general engineering habits to one repository's actual layout, commands, source-of-truth files, verification surfaces, git policy, and agent tooling.
+
+Keep this entrypoint short and operational. Put long rationale, examples, and migration guidance in the bundled reference.
+
+---
+
 ## Use me when
 
-- the task is about how **this repository** should be operated day to day;
-- the team needs a repository-specific startup / maintenance / execution playbook;
-- ad-hoc agent work in one repo is becoming chaotic and needs one local operating model;
-- you are binding general engineering habits to this repo's concrete layout, commands, and source-of-truth files.
+Use this skill when the task is about how **this repository** should be operated, maintained, verified, or documented over time.
 
 Typical triggers:
 
 - "define the operating playbook for this repo"
 - "document how agents should work in this repository"
-- "standardize this project's startup, verification, and CMake workflow"
+- "standardize this project's startup, verification, and git workflow"
 - "write the repo-specific playbook for long-running work here"
+- "extract the current source-of-truth files and commands"
+- "update the repository's agent startup process"
 
-## Scope boundary
+---
 
-This skill is for **project operation inside one repository**.
+## Do not use me as the primary skill for
 
-Use it to define:
+- extracting a reusable cross-project protocol;
+- writing a migration-ready standard detached from this repository;
+- running one complex feature through a planner/executor/reviewer workflow;
+- implementation-level C++/CMake/ABI coding rules.
 
-- repository-specific precedence and source-of-truth rules;
-- project-local CMake, verification, git, and OpenCode bindings;
-- startup and maintenance conventions for a long-lived codebase.
-
-Do **not** use it as the primary skill for:
-
-- extracting a portable cross-project engineering protocol;
-- writing a reusable migration-ready ruleset for other repositories;
-- defining the detailed execution loop for one complex task.
-
-For those cases, prefer:
+Prefer instead:
 
 - `portable-authoring-protocol` for protocol extraction and migration;
-- `plan-execute-verify-workflow` for task execution methodology;
-- `cpp-game-sdk-coding-standard` for implementation-level C++ and CMake rules.
+- `plan-execute-verify-workflow` for complex task execution methodology;
+- `cpp-game-sdk-coding-standard` for C++/CMake/ABI implementation rules.
 
-## Output contract
+---
 
-Produce results in this order unless the user explicitly wants a shorter form:
+## Mode selection
 
-1. Purpose and scope
-2. Constraint precedence
-3. Fast-start protocol
-4. Coding, docs, verification, and git rules
-5. CMake and build-system rules
-6. OpenCode configuration and session hygiene
-7. Project-specific bindings and migration checklist
+Choose the lightest mode that satisfies the request.
+
+### Quick mode
+
+Use for:
+
+- small playbook edits;
+- updating one command, path, or policy;
+- answering where a repo rule should live;
+- checking whether the playbook still references valid files.
+
+Output:
+
+- short finding;
+- changed section or patch;
+- verification note.
+
+### Standard mode
+
+Use for:
+
+- creating or revising the main repo playbook;
+- documenting startup, verification, git, build, and agent rules;
+- adding repo-specific bindings.
+
+Output:
+
+1. purpose and scope;
+2. source-of-truth map;
+3. precedence rules;
+4. fast-start protocol;
+5. verification and git rules;
+6. build/tooling bindings;
+7. migration or maintenance checklist.
+
+### Full mode
+
+Use for:
+
+- first-time playbook creation;
+- large repo onboarding;
+- consolidating scattered rules;
+- resolving stale or conflicting docs;
+- preparing the playbook for reuse by multiple agents.
+
+Output must include:
+
+- source-of-truth map;
+- repo binding manifest;
+- stale-doc/archive policy;
+- verification contract;
+- local artifact exclusion rules;
+- migration checklist;
+- final file/package verification.
+
+---
+
+## Rule precedence
+
+When rules conflict, apply this order:
+
+1. direct user instruction;
+2. safety, integrity, and non-fabrication rules;
+3. repository-local instruction files;
+4. current source-of-truth docs;
+5. active build/test/tooling configuration;
+6. this skill's portable defaults;
+7. archived plans, historical notes, and stale docs.
+
+Do not let archived or stale documents drive current behavior.
+
+If repository-local rules are stronger than this skill, repository-local rules win.
+
+---
+
+## First step: survey the repository
+
+Before writing or revising a playbook, identify only the context needed for the requested mode.
+
+Minimum survey:
+
+- active instruction files;
+- source-of-truth docs;
+- canonical configure/build/test/QA commands;
+- repository layout and module boundaries;
+- generated directories and local-only artifacts;
+- real user-facing surfaces that require manual QA;
+- commit policy and destructive-git restrictions;
+- required agent skills, tools, or LSP configuration.
+
+Avoid repeatedly rereading unchanged files. Prefer a compact source-of-truth map.
+
+---
+
+## Source-of-truth map
+
+Maintain or produce a compact map when creating or updating the playbook:
+
+```json
+{
+  "instructions": [],
+  "status_docs": [],
+  "docs_hub": "",
+  "build_guides": [],
+  "canonical_commands": {
+    "configure": "",
+    "build": "",
+    "test": "",
+    "lint": "",
+    "manual_qa": []
+  },
+  "repo_layout": {},
+  "generated_or_local_artifacts": [],
+  "active_skills": [],
+  "archived_or_non_binding_docs": []
+}
+````
+
+This map is a navigation aid, not a replacement for reading relevant files.
+
+---
+
+## Repo binding manifest
+
+When producing the playbook, separate portable defaults from repository-specific bindings.
+
+```json
+{
+  "project_name": "",
+  "languages": [],
+  "build_system": "",
+  "canonical_commands": {},
+  "layout": {},
+  "module_boundaries": [],
+  "style_rules": [],
+  "docs_policy": [],
+  "verification_policy": [],
+  "git_policy": [],
+  "local_artifacts_to_exclude": [],
+  "required_agent_skills": [],
+  "machine_local_tooling": []
+}
+```
+
+Never mix reusable principles and one-repo values without labeling them.
+
+---
 
 ## Hard rules
 
-- Read the repository instructions, status docs, and build guide first.
-- Keep portable defaults separate from repository-specific bindings.
-- Never fabricate build, test, QA, or tool results.
-- Prefer the smallest correct change.
-- Verification is part of the work, not a follow-up.
-- Keep generated and local session artifacts out of normal commits.
-- If the project already has stronger local rules, those override this skill.
+* Read active repository instructions before defining repository behavior.
+* Keep portable defaults separate from repo-specific bindings.
+* Never fabricate build, test, QA, LSP, or tool results.
+* Verification is part of the work, not a follow-up.
+* Prefer the smallest correct playbook change.
+* Keep generated output, local session artifacts, and machine-local files out of normal commits.
+* Do not rewrite history or run destructive git commands without explicit permission.
+* If a command was not run, say it was not run.
+* If source-of-truth is incomplete or conflicting, state the uncertainty.
 
-## Execution steps
+---
 
-### 1. Survey the repository
+## Output contract
 
-Before writing the playbook, identify:
+Unless the user requests a shorter form, produce:
 
-- active instruction files;
-- current status / source-of-truth docs;
-- canonical configure, build, test, and QA commands;
-- public API layout and module boundaries;
-- generated directories and local-only artifacts to exclude from commits;
-- the real user-facing surfaces that must be manually tested.
+1. selected mode;
+2. purpose and scope;
+3. source-of-truth map;
+4. constraint precedence;
+5. fast-start protocol;
+6. coding, docs, verification, and git rules;
+7. build/tooling bindings;
+8. OpenCode and session hygiene;
+9. project-specific binding manifest;
+10. migration or maintenance checklist;
+11. verification record.
 
-### 2. Resolve precedence
+---
 
-Apply this order:
+## Verification record
 
-1. direct user instruction;
-2. safety and non-fabrication rules;
-3. repository-specific instructions;
-4. current source-of-truth docs;
-5. this skill's defaults;
-6. archived plans and historical notes.
+When completing playbook work, include:
 
-Do not let archived plans drive current behavior.
+```markdown
+## Verification
+- Files checked:
+- Links/paths verified:
+- Commands verified:
+- Commands not run:
+- Known uncertainty:
+```
 
-### 3. Extract portable rules first
+Do not claim verification without evidence.
 
-Write the rules that should survive migration:
-
-- startup and planning protocol;
-- coding defaults;
-- documentation defaults;
-- verification stack;
-- git discipline;
-- CMake and dependency-management practices;
-- OpenCode and LSP setup habits.
-
-Do not mix these with GAP-specific values yet.
-
-### 4. Add project bindings second
-
-After the portable section, append the project-local bindings:
-
-- language and language version;
-- repository layout;
-- naming rules;
-- build and test commands;
-- commit style;
-- generated directories to exclude;
-- required OpenCode skills or machine-local configuration.
-
-### 5. Keep the skill entrypoint short
-
-Use this file as the command-style entrypoint.
-
-- Keep instructions operational.
-- Use bullets and ordered steps.
-- Avoid long rationale here.
-- Put long explanations, examples, and migration detail in the bundled reference.
-
-### 6. Keep the reference long
-
-Use `references/agentic-project-playbook-reference.md` for:
-
-- detailed rationale;
-- long-form examples;
-- migration checklist;
-- repository-derived lessons learned.
-
-### 7. Verify before stopping
-
-At minimum verify:
-
-- the skill folder contains `SKILL.md`, `README.md`, and the reference file;
-- the `metadata.source` path in `SKILL.md` exists;
-- README references resolve;
-- the skill still matches the current repository playbook;
-- any linked docs hub entry exists and is discoverable.
-
-## CMake rules
-
-- Apply `gap_set_strict_warnings()` per target, never globally.
-- Every IDE-facing target — libraries, tools, executables, and test binaries —
-  must expose the files engineers actually edit in the generated IDE project:
-  own headers, own sources, and project-local dependency headers/sources added
-  for visibility only.
-- Do not limit this rule to installable library headers. If a target owns local
-  `.hpp` / `.h` files under `src/` or a tool directory, include them in
-  `target_sources(...)` so the generated Visual Studio solution is not missing
-  editable headers.
-- For dependency files use `target_sources(PRIVATE …)` + `HEADER_FILE_ONLY TRUE`
-  on `.cpp` files so they appear in the IDE tree but are not compiled by the
-  consumer.  Use `source_group()` to group them under
-  `Dependencies/<dep>/Header Files` and `Dependencies/<dep>/Source Files`.
-- Never alter the build graph or compile dependency `.cpp` files twice.
-- Place reusable CMake helpers in `cmake/` and include them from the root
-  `CMakeLists.txt`.
+---
 
 ## Packaging rules
 
@@ -180,20 +264,24 @@ Expected layout:
     agentic-project-playbook-reference.md
 ```
 
-## Migration checklist
+After editing this skill package, verify:
 
-When copying this skill to another repository, replace these values:
+* `SKILL.md` has valid YAML frontmatter;
+* the folder name matches the skill name;
+* `metadata.source` points to an existing reference;
+* README and reference agree with the entrypoint;
+* repo-specific bindings are not accidentally promoted to portable rules.
 
-- language and language version;
-- build system and canonical commands;
-- repository layout and module boundaries;
-- code style and naming convention;
-- verification bar and test framework;
-- commit policy;
-- excluded generated directories;
-- required OpenCode skills and LSP servers.
+---
 
-## Bundled files
+## Reference loading policy
 
-- `README.md` explains packaging and copying.
-- `references/agentic-project-playbook-reference.md` contains the long-form playbook.
+Use `references/agentic-project-playbook-reference.md` when:
+
+* creating the playbook from scratch;
+* resolving conflicting repository rules;
+* preparing migration guidance;
+* explaining rationale;
+* producing long-form examples.
+
+Do not load or restate the long reference for small playbook edits.

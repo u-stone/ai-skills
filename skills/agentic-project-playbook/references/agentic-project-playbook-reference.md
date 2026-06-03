@@ -1,242 +1,306 @@
 # Agentic Project Playbook Reference
 
-This document is a reusable reference for running a complex software project
-with AI agents. It was distilled from GAP, but it is written so the portable
-parts can be copied into another repository with minimal rewriting.
+This reference defines a reusable method for creating and maintaining a repository-local operating playbook for AI-assisted software work.
 
 It separates:
 
-- rules that are broadly portable to other projects;
-- GAP-specific bindings that should be replaced after migration;
-- OpenCode-specific packaging and workflow advice.
+1. portable rules that transplant well;
+2. repository-specific bindings that must be replaced after migration;
+3. OpenCode packaging and session hygiene guidance.
 
-## 1. Purpose and Scope
+This reference complements repository-local rules. It does not replace direct user instructions, active repository instructions, or current source-of-truth documents.
 
-Use this reference when you need a practical playbook for:
+---
 
-- starting agent work in a large repository quickly;
-- defining coding, documentation, verification, and git discipline;
-- capturing CMake and build-system lessons in a reusable way;
-- packaging those lessons as an OpenCode skill.
+## 1. Purpose and scope
 
-This reference complements repository-local rules. It does not replace direct
-user instructions, repository instructions, or current source-of-truth docs.
+Use this reference when you need to define how agents should operate inside one repository.
 
-## 2. Constraint Precedence
+A good project playbook answers:
 
-When rules conflict, use this order:
+- where agents should start;
+- which docs are authoritative;
+- which commands verify work;
+- what files must not be committed;
+- how build, test, QA, docs, and git discipline work;
+- which local tools, skills, and LSP servers matter;
+- how an interrupted agent can resume safely.
+
+This is not a task execution plan and not a language-specific coding standard.
+
+---
+
+## 2. Mode selection
+
+### Quick mode
+
+Use for:
+
+- updating one command or path;
+- checking one playbook rule;
+- verifying package references;
+- small README/SKILL edits.
+
+Output:
+
+- concise change;
+- affected section;
+- verification note.
+
+### Standard mode
+
+Use for:
+
+- creating or revising the repo playbook;
+- documenting startup, verification, git, docs, build, and tooling rules;
+- adding repo-specific bindings.
+
+Output:
+
+- source-of-truth map;
+- precedence rules;
+- fast-start protocol;
+- repo binding manifest;
+- verification record.
+
+### Full mode
+
+Use for:
+
+- first-time playbook creation;
+- large repo consolidation;
+- stale-doc cleanup;
+- multi-agent onboarding;
+- migration preparation.
+
+Output:
+
+- full source-of-truth map;
+- conflict/staleness assessment;
+- complete playbook;
+- migration checklist;
+- maintenance checklist.
+
+---
+
+## 3. Constraint precedence
+
+When rules conflict, apply:
 
 1. direct user instruction;
 2. safety, integrity, and non-fabrication rules;
-3. repository-specific instructions;
+3. repository-specific instruction files;
 4. current source-of-truth docs;
-5. this playbook's portable defaults;
-6. archived plans and historical notes.
+5. active build/test/tooling configuration;
+6. this playbook's portable defaults;
+7. archived plans and historical notes.
 
-Portable lesson: always identify the active source of truth early. The biggest
-time loss in long-running projects is following stale plans after the codebase
-has moved on.
+Portable lesson:
 
-## 3. Fast-Start Protocol for a Complex Repository
+> Always identify active source of truth early. The biggest time loss in long-running projects is following stale plans after the repository has moved on.
 
-### 3.1 Survey First
+Archived docs can inform history, but they must not drive current behavior unless explicitly reactivated.
 
-Before implementing, gather enough context to avoid blind edits:
+---
 
-- read the root agent instruction file;
-- read the status file and docs hub;
-- read the build guide and top-level build configuration;
-- identify module boundaries and dependency direction;
-- identify the real user-facing surface;
-- identify generated directories and local-only artifacts that must not be
-  committed.
+## 4. Source-of-truth map
 
-### 3.2 Parallel Context Gathering
+Maintain a compact map for the repository.
 
-For non-trivial work, parallelize early:
+```json
+{
+  "instructions": [
+    {
+      "path": "",
+      "status": "active | archived | unknown",
+      "notes": ""
+    }
+  ],
+  "status_docs": [],
+  "docs_hub": "",
+  "build_guides": [],
+  "canonical_commands": {
+    "configure": "",
+    "build": "",
+    "test": "",
+    "lint": "",
+    "format": "",
+    "manual_qa": []
+  },
+  "repo_layout": {
+    "source": [],
+    "tests": [],
+    "docs": [],
+    "tools": [],
+    "generated": []
+  },
+  "module_boundaries": [],
+  "local_artifacts_to_exclude": [],
+  "active_skills": [],
+  "machine_local_tooling": [],
+  "archived_or_non_binding_docs": []
+}
+````
 
-- use one or two exploration agents for code patterns and ownership;
-- use a librarian-style agent for unfamiliar external APIs;
-- read the concrete files you already know are relevant;
-- consult an Oracle-style reviewer for architecture, hard debugging, or security
-  and performance tradeoffs.
+Rules:
 
-Portable lesson: delegation is for context gathering, not for losing ownership.
-The main agent must still understand and verify the files it changes.
+* Keep it compact.
+* Use it to avoid repeated full repository scans.
+* Update it when canonical files or commands change.
+* Do not treat it as a substitute for reading files relevant to the current change.
 
-### 3.3 Plan Before Editing
+---
 
-For complex tasks, define:
+## 5. Fast-start protocol
 
-- the behavior to change;
-- the files expected to change;
-- the build/test/manual QA commands;
-- the commit boundaries;
-- the likely risk areas.
+Before implementation work in a large repository:
 
-A short concrete plan prevents both over-engineering and chaotic multi-file
-changes.
+1. read active repository instruction files;
+2. read the status/source-of-truth docs;
+3. read the docs hub if present;
+4. identify canonical build/test/lint/QA commands;
+5. identify module boundaries and dependency direction;
+6. identify generated/local-only files that must not be committed;
+7. identify the real user-facing verification surface;
+8. create or update the source-of-truth map if needed.
 
-## 4. Execution Protocol
+For non-trivial work, parallelize context gathering only when it reduces total uncertainty. Delegation is for discovery, not for losing ownership.
 
-Use this loop:
+The main agent remains responsible for understanding and verifying the files it changes.
+
+---
+
+## 6. Planning and execution discipline
+
+Portable execution loop:
 
 1. explore;
 2. plan;
 3. implement;
 4. verify;
-5. manually QA;
-6. commit the atomic result if requested or required by repository policy.
-
-Portable lesson: the work is not complete when the edit is written. It is
-complete when the surface behaves correctly.
-
-## 5. Coding Rules That Transplant Well
+5. manually QA when needed;
+6. inspect diff;
+7. commit atomic result only if requested or required.
 
 Portable defaults:
 
-- prefer the smallest correct change;
-- fix root causes when scope stays reasonable;
-- avoid speculative compatibility layers and fallback logic;
-- match the surrounding style before inventing a new one;
-- do not refactor unrelated code while fixing a local issue;
-- validate at real boundaries only;
-- keep comments sparse and useful;
-- add or adjust tests when guarding a subtle bug or important behavior.
+* prefer the smallest correct change;
+* fix root causes when scope stays reasonable;
+* avoid speculative compatibility layers;
+* avoid unrelated refactors;
+* match surrounding style;
+* validate at real boundaries;
+* add tests for subtle or important behavior;
+* keep comments sparse and useful.
 
-Project-local bindings to determine after copying:
+Work is complete when the relevant surface behaves correctly, not when the edit is written.
 
-- language and language version;
-- naming convention;
-- error-handling model;
-- ownership and concurrency rules;
-- public API documentation standard;
-- code formatting commands.
+For complex task decomposition, use `plan-execute-verify-workflow` instead.
 
-## 6. Documentation Rules That Transplant Well
+---
+
+## 7. Documentation rules
 
 Portable defaults:
 
-- keep a docs hub or equivalent navigation file;
-- separate current rules from archive material;
-- update links when moving files;
-- write new docs when they serve a distinct audience or portable purpose;
-- keep code examples technically correct for the actual API and language level;
-- clearly mark comparative research as non-binding.
+* keep a docs hub or equivalent navigation file;
+* separate current rules from archive material;
+* update links when moving files;
+* write new docs only when they serve a distinct audience or durable purpose;
+* keep code examples technically correct;
+* mark comparative research as non-binding;
+* avoid duplicating rules across many docs unless one is clearly the source of truth.
 
-Portable lesson: documentation should help an interrupted contributor resume the
-project quickly. Good docs reduce agent warm-up cost.
+Good docs reduce agent warm-up cost and help interrupted work resume safely.
 
-## 7. Git Discipline for Agentic Work
+---
+
+## 8. Git discipline
 
 Portable defaults:
 
-- inspect `git status`, `git diff`, and recent history before committing;
-- stage only intended files;
-- keep generated artifacts, local notes, and session outputs out of commits;
-- split commits by independent concerns;
-- keep tests with their implementation;
-- do not rewrite history or use destructive git commands without permission;
-- match the repository's commit-message style.
+* inspect `git status`, `git diff`, and relevant recent history before committing;
+* stage only intended files;
+* keep generated artifacts, local notes, evidence logs, and session outputs out of normal commits;
+* split commits by independent concerns;
+* keep tests with implementation;
+* do not rewrite history without explicit permission;
+* do not use destructive git commands without explicit permission;
+* match the repository's commit-message style.
 
-Portable lesson: the most common agent git failure is a giant mixed commit with
-implementation, docs, generated output, and local artifacts all staged together.
+Most agent git failures are mixed commits with implementation, docs, generated output, and local artifacts staged together.
 
-## 8. CMake and Build-System Lessons
+---
 
-### 8.1 Repository Layout
+## 9. Verification policy
 
-Strong default for C++ library projects:
+A playbook must record canonical verification surfaces.
 
-```text
-include/<project>/<module>/  public headers
-src/<module>/                implementation
-tests/                       test sources
-examples/                    runnable usage examples
-tools/                       standalone tools
-cmake/                       shared CMake helpers
-docs/                        project documentation
+Recommended categories:
+
+```json
+{
+  "configure": "",
+  "build": "",
+  "unit_tests": "",
+  "integration_tests": "",
+  "lint": "",
+  "format": "",
+  "manual_qa": [],
+  "release_or_package": ""
+}
 ```
 
-Portable lesson: separating `include/` from `src/` makes the public surface
-explicit and improves both human onboarding and agent navigation.
+Rules:
 
-### 8.2 Target-Based CMake
+* Do not fabricate command results.
+* If a command was not run, say it was not run.
+* If manual QA is required, name the actual user-facing surface.
+* If verification is impossible in the current environment, state the blocker.
 
-Prefer target-based CMake:
+Verification record format:
 
-- one target per module or responsibility unit;
-- target-scoped include directories, definitions, and compile options;
-- accurate `PUBLIC` / `PRIVATE` / `INTERFACE` dependency visibility;
-- project-prefixed options;
-- no global warning flags that pollute third-party code.
+```markdown
+## Verification
+- Files checked:
+- Links/paths verified:
+- Commands run:
+- Commands not run:
+- Manual QA:
+- Known uncertainty:
+```
 
-Portable lesson: warnings-as-errors should usually be target-scoped, not global.
+---
 
-### 8.3 IDE Project Visibility
+## 10. Build-system and CMake lessons
 
-Every library target should expose all files it uses in the generated IDE
-project, not just the files it compiles directly.  This matters for code
-navigation in Visual Studio, Xcode, and similar IDEs.
+For C++/CMake projects, portable defaults include:
 
-Recommended rule:
+* prefer target-based CMake;
+* one target per module or responsibility unit;
+* target-scoped include directories, definitions, and compile options;
+* accurate `PUBLIC` / `PRIVATE` / `INTERFACE` dependency visibility;
+* no global warning flags that pollute third-party code;
+* project-prefixed options;
+* persistent dependency cache when using fetched dependencies;
+* explicit offline mode when needed.
 
-1. **Own public headers**: glob from the public header directory and add to
-   `target_sources()`.  Mark none of them as compiled (headers already are not).
-2. **Own implementation files**: list explicitly in `add_library()` or
-   `target_sources()`.
-3. **Dependency headers and sources**: for each linked library target, attach its
-   source files for IDE visibility only.  Use `HEADER_FILE_ONLY TRUE` on `.cpp`
-   files so they appear in the project tree but are not compiled by the consumer.
+IDE visibility lesson:
 
-Use `source_group()` to organize these into readable folders such as
-`Header Files`, `Source Files`, and `Dependencies/<dep>/Header Files` /
-`Dependencies/<dep>/Source Files`.
+* generated IDE projects should expose files engineers actually edit;
+* include target-owned headers and sources;
+* add dependency files for visibility only when useful;
+* avoid altering the build graph or compiling dependency `.cpp` files twice.
 
-Portable lesson: `HEADER_FILE_ONLY TRUE` is directory-scoped in CMake ≤ 3.17.
-Setting it in the consumer's CMakeLists.txt does not affect how the owning
-target compiles the same file in its own directory.
+Repository-specific CMake details belong in the binding section, not in the portable rules.
 
-### 8.4 Dependency Management
+For implementation-level C++/CMake/ABI standards, use `cpp-game-sdk-coding-standard`.
 
-Practical pattern:
+---
 
-- `find_package()` first;
-- `FetchContent` fallback second;
-- keep fetched sources in a persistent cache outside the build directory;
-- support an explicit offline mode.
+## 11. OpenCode practices
 
-Portable lesson: a persistent dependency cache keeps rebuilds fast after build
-directory resets.
-
-### 8.5 Workflow Scripts
-
-For developer experience, prefer one full workflow script per platform instead
-of many partial scripts. A full workflow script should:
-
-1. configure;
-2. build;
-3. run tests;
-4. run examples or the nearest real surface.
-
-Portable lesson: when a build-system change claims success, the workflow script
-is the most valuable manual QA surface.
-
-## 9. OpenCode Practices
-
-### 9.1 Skills to Keep Available
-
-Commonly useful skill types:
-
-- repository rule extraction;
-- git discipline and commit planning;
-- post-implementation review;
-- browser automation for web UIs;
-- OpenCode customization for local skills and configuration.
-
-### 9.2 Skill Package Layout
-
-Recommended package:
+Recommended skill package layout:
 
 ```text
 .opencode/skills/<skill-name>/
@@ -246,21 +310,14 @@ Recommended package:
     <skill-name>-reference.md
 ```
 
-`SKILL.md` should be concise and operational. Detailed background belongs under
-`references/`.
+Guidelines:
 
-### 9.3 LSP and Tooling Configuration
+* `SKILL.md` is concise and operational;
+* long background belongs in `references/`;
+* README explains packaging, copying, and maintenance;
+* machine-local LSP configuration should be documented separately unless the repository explicitly tracks it.
 
-Useful defaults for CMake/C++ projects:
-
-- `clangd` for C++ with a valid compile database when possible;
-- `cmake-language-server` for CMake files;
-- markdown diagnostics or link checks for docs.
-
-If the environment routes language servers by file extension, `CMakeLists.txt`
-may require explicit `.txt` mapping.
-
-Example OpenCode CMake LSP binding:
+Useful LSP/tooling bindings for CMake/C++ projects:
 
 ```json
 {
@@ -273,54 +330,237 @@ Example OpenCode CMake LSP binding:
 }
 ```
 
-Portable lesson: LSP is a fast feedback layer, not the final authority. Build
-and tests still decide whether the project is actually healthy.
+LSP is fast feedback, not final authority. Build and tests decide actual health.
 
-### 9.4 Session Hygiene
+---
 
-Keep local artifacts out of normal commits:
+## 12. Session hygiene
 
-- local session folders;
-- build output;
-- generated evidence files;
-- scratch notes;
-- machine-local config unless the repository explicitly tracks it.
+Keep out of normal commits unless explicitly tracked:
 
-Portable lesson: a final `git status` before commit prevents most accidental
-agent pollution.
+* local session folders;
+* build output;
+* generated evidence files;
+* scratch notes;
+* machine-local config;
+* temporary screenshots/logs;
+* local caches.
 
-## 10. Migration Checklist
+Before commit:
 
-When copying this playbook to another project, replace these bindings:
+1. inspect status;
+2. inspect diff;
+3. stage intended files only;
+4. verify generated/local artifacts are excluded;
+5. write a scoped commit message.
 
-- language and language version;
-- build system and canonical commands;
-- directory layout and module boundaries;
-- code style and naming conventions;
-- docs structure and language policy;
-- verification bar and test framework;
-- commit style and review rhythm;
-- generated and local-only directories;
-- required OpenCode skills and LSP servers.
+---
 
-## 11. GAP Binding Snapshot
+## 13. Repository binding manifest
 
-Current GAP-specific bindings:
+Use this schema when creating or revising a repo playbook:
 
-- language: C++17;
-- build system: CMake with CTest;
-- repository layout: `include/gap/<module>/` and `src/<module>/`;
-- docs hub: `docs/README.md`;
-- current rules: `AGENTS.md`, `STATUS.md`, and `docs/standards/`;
-- workflow scripts: `scripts/run_linux.sh`, `scripts/run_macos.sh`,
-  `scripts/run_windows.bat`;
-- local artifacts to exclude: `.sisyphus/**`, `.remember/**`, `build/`,
-  generated evidence logs, `gui_module.md`, and `imgui.ini`;
-- commit style: `[Phase X] Implement/Fix: <brief description>`.
+```json
+{
+  "project_name": "",
+  "languages": [],
+  "language_versions": {},
+  "build_system": "",
+  "canonical_commands": {
+    "configure": "",
+    "build": "",
+    "test": "",
+    "lint": "",
+    "format": "",
+    "manual_qa": []
+  },
+  "repository_layout": {},
+  "module_boundaries": [],
+  "style_rules": [],
+  "documentation_policy": [],
+  "verification_policy": [],
+  "git_policy": [],
+  "generated_or_local_artifacts": [],
+  "required_skills": [],
+  "tooling": {
+    "lsp": [],
+    "formatters": [],
+    "linters": []
+  },
+  "archive_policy": "",
+  "known_risks": []
+}
+```
 
-## 12. Final Principle
+Separate:
 
-The best agent workflow is the one that keeps the project buildable,
-reviewable, and resumable after interruptions. The job is not only to write
-code. It is to leave behind a repository that another engineer or agent can
-re-enter quickly and safely.
+* portable defaults;
+* repository-specific bindings;
+* historical notes.
+
+---
+
+## 14. Migration checklist
+
+When copying this playbook to another project, replace:
+
+* project name;
+* language and language versions;
+* build system;
+* canonical commands;
+* directory layout;
+* module boundaries;
+* code style and naming conventions;
+* docs structure;
+* verification bar;
+* test framework;
+* commit style;
+* generated/local-only directories;
+* required skills;
+* LSP and tool configuration;
+* archived/stale docs policy.
+
+Do not leave source-project paths or commands in a migrated playbook unless they are intentionally still valid.
+
+---
+
+## 15. Maintenance checklist
+
+After editing the skill package:
+
+* [ ] `SKILL.md` has valid YAML frontmatter.
+* [ ] Folder name matches skill name.
+* [ ] `metadata.source` points to the reference.
+* [ ] README and SKILL agree on scope.
+* [ ] Reference agrees with current repository behavior.
+* [ ] Long rationale is not duplicated in SKILL.
+* [ ] Repo-specific values are labeled as bindings.
+* [ ] Archived docs are not presented as active rules.
+* [ ] Verification record states what was and was not checked.
+
+---
+
+## 16. Eval cases
+
+### Eval 1: Quick command update
+
+Input:
+
+```text
+Update the playbook because tests now run with `ctest --test-dir out/build`.
+```
+
+Expected:
+
+* choose Quick mode;
+* update only command binding;
+* verify affected references;
+* do not rewrite full playbook.
+
+Reject if:
+
+* produces unrelated broad playbook rewrite.
+
+---
+
+### Eval 2: First-time repo playbook
+
+Input:
+
+```text
+Create an agentic project playbook for this repository.
+```
+
+Expected:
+
+* choose Full mode;
+* survey active instruction files;
+* produce source-of-truth map;
+* produce repo binding manifest;
+* separate portable defaults from repo values.
+
+Reject if:
+
+* invents commands;
+* treats archived docs as active without evidence.
+
+---
+
+### Eval 3: Stale docs conflict
+
+Input:
+
+```text
+The old plan says to use Make, but the current build guide uses CMake.
+```
+
+Expected:
+
+* current build guide wins;
+* archived plan marked non-binding;
+* uncertainty noted if source status is unclear.
+
+Reject if:
+
+* follows stale plan.
+
+---
+
+### Eval 4: Git hygiene
+
+Input:
+
+```text
+Commit the playbook changes.
+```
+
+Expected:
+
+* inspect status and diff;
+* stage intended files only;
+* exclude generated/local artifacts;
+* avoid destructive git operations without permission.
+
+Reject if:
+
+* stages broad unrelated files.
+
+---
+
+### Eval 5: Skill boundary
+
+Input:
+
+```text
+Run this feature through planner/executor/reviewer waves.
+```
+
+Expected:
+
+* recommend `plan-execute-verify-workflow`;
+* do not misuse project playbook as execution workflow.
+
+Reject if:
+
+* creates a full task execution methodology inside this skill.
+
+---
+
+### Eval 6: C++ implementation rule request
+
+Input:
+
+```text
+Design a public C ABI for this SDK.
+```
+
+Expected:
+
+* recommend `cpp-game-sdk-coding-standard`;
+* optionally note how repo playbook binds that skill locally.
+
+Reject if:
+
+* duplicates detailed ABI standard here.
+
+```

@@ -1,13 +1,22 @@
 # agentic-project-playbook
 
-This folder is a shareable OpenCode skill package for defining how one specific
-repository should be operated and maintained over time.
+A shareable OpenCode skill package for defining how one specific repository should be operated and maintained by AI agents over time.
 
-It packages the GAP-derived project playbook into a repository-local skill that
-can be copied elsewhere, but its primary job is to bind general engineering
-habits to one repo's concrete commands, layout, and source-of-truth files.
+It packages a repository-local operating playbook pattern:
 
-## What is included
+- startup protocol;
+- source-of-truth precedence;
+- verification commands;
+- git discipline;
+- build-system and tooling bindings;
+- OpenCode/session hygiene;
+- migration and maintenance checks.
+
+This skill is repo-local by design. It binds general engineering habits to one repository's concrete files, commands, layout, and policies.
+
+---
+
+## Package layout
 
 ```text
 .opencode/skills/agentic-project-playbook/
@@ -15,44 +24,62 @@ habits to one repo's concrete commands, layout, and source-of-truth files.
 ├── README.md
 └── references/
     └── agentic-project-playbook-reference.md
-```
+````
 
-- `SKILL.md`
-  - the skill entrypoint discovered by OpenCode;
-  - contains the short command-style entrypoint and execution steps;
-  - should stay concise and operational.
-- `references/agentic-project-playbook-reference.md`
-  - the long-form playbook;
-  - intended for deep reading, rationale, and copying into another repository.
+* `SKILL.md`
 
-This package intentionally uses a two-layer shape:
+  * short operational entrypoint discovered by OpenCode;
+  * should stay concise and command-style.
+* `references/agentic-project-playbook-reference.md`
 
-- `SKILL.md` is the short command-style layer that tells an agent what to do;
-- `references/agentic-project-playbook-reference.md` is the long-form human and
-  migration reference that explains why.
+  * long-form playbook reference;
+  * contains rationale, templates, examples, and migration guidance.
+
+---
 
 ## What this skill is for
 
-Use this skill when you want to:
+Use this skill to:
 
-- define how agents should start, verify, and maintain work in this repository;
-- document repository-specific CMake, verification, git, and OpenCode bindings;
-- create a day-to-day operating playbook for long-running work in one codebase;
-- standardize this repo's startup, precedence, and maintenance conventions.
+* define how agents should start work in this repository;
+* document current source-of-truth files;
+* bind canonical build, test, lint, and QA commands;
+* define local git discipline and artifact exclusions;
+* capture repository-specific OpenCode and tooling expectations;
+* maintain a day-to-day operating playbook for long-running AI-assisted development.
 
-## Do not use this skill for
+---
 
-- extracting a reusable cross-project engineering protocol;
-- rewriting this repo's rules as a migration-ready standard for other repos;
-- defining the plan-execute-verify loop for one complex implementation task.
+## What this skill is not for
 
-## Prefer these skills instead
+Do not use this skill as the primary tool for:
 
-- `portable-authoring-protocol` for protocol extraction and migration;
-- `plan-execute-verify-workflow` for task execution methodology;
-- `cpp-game-sdk-coding-standard` for C++/CMake/ABI implementation rules.
+* extracting a reusable cross-project protocol;
+* writing a migration-ready engineering standard;
+* executing one complex feature through task/review waves;
+* implementation-level C++/CMake/ABI rules.
 
-## How to use it in this repository
+Prefer:
+
+* `portable-authoring-protocol` for protocol extraction and migration;
+* `plan-execute-verify-workflow` for task execution methodology;
+* `cpp-game-sdk-coding-standard` for implementation-level C++ and CMake rules.
+
+---
+
+## Modes
+
+| Mode     | Use when                               | Output                                                 |
+| -------- | -------------------------------------- | ------------------------------------------------------ |
+| Quick    | small update or path/command check     | concise patch + verification note                      |
+| Standard | normal playbook creation or revision   | source map + rules + bindings                          |
+| Full     | first-time or large repo consolidation | full manifest + stale-doc policy + migration checklist |
+
+Use the lightest mode that satisfies the request.
+
+---
+
+## How to use it
 
 Project-local placement:
 
@@ -66,66 +93,77 @@ Agents can load it by name:
 agentic-project-playbook
 ```
 
-Typical use cases:
+Example prompts:
 
-- "Use `agentic-project-playbook` to define our agent startup workflow."
-- "Use `agentic-project-playbook` to define how this repository should run."
-- "Use `agentic-project-playbook` to document our CMake and git discipline."
+* "Use `agentic-project-playbook` to define our agent startup workflow."
+* "Use `agentic-project-playbook` to document how this repository should run."
+* "Update the repo playbook with the new test command."
+* "Create a source-of-truth map for this repository."
+* "Verify that the playbook still matches the current build guide."
 
-## How to copy it to another repository
+---
 
-Copy the whole folder into the target repository:
+## Copying to another repository
+
+Copy the whole folder:
 
 ```text
 <target-repo>/.opencode/skills/agentic-project-playbook/
 ```
 
-Minimum required file is:
+Minimum required file:
 
 ```text
 <target-repo>/.opencode/skills/agentic-project-playbook/SKILL.md
 ```
 
-Recommended copy is the whole folder so the bundled reference stays available.
+Recommended copy includes the bundled reference.
+
+---
 
 ## What to customize after copying
 
-After moving this skill into another repository, review and update:
+Replace repository-specific bindings:
 
-- language and language version;
-- build system and canonical commands;
-- repository layout and module boundaries;
-- style guide and naming convention;
-- documentation structure and language policy;
-- test, QA, and release expectations;
-- commit policy and destructive git restrictions;
-- required OpenCode skills and machine-local LSP configuration.
+* project name;
+* language and language versions;
+* build system and canonical commands;
+* repository layout and module boundaries;
+* active instruction files;
+* docs hub and status docs;
+* style guide and naming rules;
+* verification and QA expectations;
+* commit policy;
+* destructive git restrictions;
+* generated/local artifacts to exclude;
+* required OpenCode skills;
+* machine-local LSP/tooling configuration.
+
+Keep portable principles separate from repo-specific values.
+
+---
 
 ## Source of truth
 
-This skill is defined by the files in this folder:
+This skill package is defined by:
 
-- `SKILL.md`
-- `references/agentic-project-playbook-reference.md`
+* `SKILL.md`;
+* `references/agentic-project-playbook-reference.md`.
 
-The skill was derived from:
+If the playbook evolves:
 
-- `docs/guides/agentic_project_playbook.md`
+* update `SKILL.md` when operational steps or package contract change;
+* update the reference when rationale, examples, or migration guidance change;
+* update both when the repository's effective workflow changes.
 
-If the playbook evolves, update both the guide and this skill package.
+---
 
-Keep them split deliberately:
+## Verification after editing
 
-- update `SKILL.md` when the operational steps or packaging contract changes;
-- update the reference when the rationale, examples, or migration guidance
-  changes;
-- update both when the repository's effective workflow changes.
-
-## Verification
-
-At minimum, verify these points after editing the skill:
-
-- `SKILL.md` still has valid YAML frontmatter;
-- the folder name matches the skill name;
-- the bundled reference path still exists;
-- the reference still matches the current playbook and project behavior.
+* [ ] `SKILL.md` has valid YAML frontmatter.
+* [ ] Folder name matches `agentic-project-playbook`.
+* [ ] `metadata.source` points to an existing reference file.
+* [ ] README and reference agree with the entrypoint.
+* [ ] Long rationale is in the reference, not the short entrypoint.
+* [ ] Repo-specific bindings are clearly labeled.
+* [ ] Archived/stale docs are not treated as current rules.
