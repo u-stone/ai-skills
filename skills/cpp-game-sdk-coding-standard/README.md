@@ -23,7 +23,7 @@ It packages:
         ├── .editorconfig
         ├── .gitattributes
         └── README.md
-````
+```
 
 ---
 
@@ -144,5 +144,4 @@ Before copying `.clang-format`, `.editorconfig`, or `.gitattributes` into a targ
 * [ ] Config files are intentional copies or deliberate adaptations.
 * [ ] README and SKILL agree on use cases and exclusions.
 * [ ] Strict SDK mode includes ABI, ownership, threading, and export checks.
-
 

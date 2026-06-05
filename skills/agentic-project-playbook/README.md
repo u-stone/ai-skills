@@ -24,7 +24,7 @@ This skill is repo-local by design. It binds general engineering habits to one r
 ├── README.md
 └── references/
     └── agentic-project-playbook-reference.md
-````
+```
 
 * `SKILL.md`
 

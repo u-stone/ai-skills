@@ -6,7 +6,7 @@ compatibility: opencode
 metadata:
   audience: maintainers
   workflow: plan-execute-verify
-  source: .opencode/skills/plan-execute-verify-workflow/references/plan-execute-verify-workflow-reference.md
+  source: skills/plan-execute-verify-workflow/references/plan-execute-verify-workflow-reference.md
   modes:
     - lite
     - standard
@@ -73,7 +73,7 @@ Flow:
 
 ```text
 mini-plan → execute → focused verification → concise result
-````
+```
 
 Required:
 

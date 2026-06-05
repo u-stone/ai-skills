@@ -6,7 +6,10 @@ compatibility: opencode
 metadata:
   audience: maintainers
   workflow: engineering-governance
-  source: .opencode/skills/portable-authoring-protocol/references/portable-authoring-protocol-reference.md
+  source: skills/portable-authoring-protocol/references/portable-authoring-protocol-reference.md
+  modes:
+    - standard
+    - migration
 ---
 
 # Portable Authoring Protocol

@@ -19,7 +19,7 @@ Default to Lite mode. Escalate only when the task risk justifies it.
 ├── README.md
 └── references/
     └── plan-execute-verify-workflow-reference.md
-````
+```
 
 Minimum required file:
 

@@ -100,7 +100,7 @@ Output:
 - Goal:
 - Change:
 - Verification:
-````
+```
 
 Completion requires:
 

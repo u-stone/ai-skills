@@ -33,7 +33,7 @@ For a new repository, copy files to the repository root:
 <repo>/.clang-format
 <repo>/.editorconfig
 <repo>/.gitattributes
-````
+```
 
 For an existing repository, merge deliberately instead of blindly overwriting.
 

@@ -140,7 +140,7 @@ Maintain a compact map for the repository.
   "machine_local_tooling": [],
   "archived_or_non_binding_docs": []
 }
-````
+```
 
 Rules:
 

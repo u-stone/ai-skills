@@ -6,7 +6,7 @@ compatibility: opencode
 metadata:
   audience: native-sdk-engineers
   workflow: cpp-game-sdk-development
-  source: .opencode/skills/cpp-game-sdk-coding-standard/references/cpp-game-sdk-coding-standard-reference.md
+  source: skills/cpp-game-sdk-coding-standard/references/cpp-game-sdk-coding-standard-reference.md
   modes:
     - quick
     - standard
@@ -140,7 +140,7 @@ If unspecified, default to:
 
 ```text
 Standard mode + business development + SDK-ready cross-platform design.
-````
+```
 
 Escalate to Strict SDK mode when public ABI, shared library exports, or SDK distribution is involved.
 

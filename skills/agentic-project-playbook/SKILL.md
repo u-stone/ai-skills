@@ -6,7 +6,7 @@ compatibility: opencode
 metadata:
   audience: maintainers
   workflow: agentic-project-execution
-  source: .opencode/skills/agentic-project-playbook/references/agentic-project-playbook-reference.md
+  source: skills/agentic-project-playbook/references/agentic-project-playbook-reference.md
   modes:
     - quick
     - standard
@@ -171,7 +171,7 @@ Maintain or produce a compact map when creating or updating the playbook:
   "active_skills": [],
   "archived_or_non_binding_docs": []
 }
-````
+```
 
 This map is a navigation aid, not a replacement for reading relevant files.
 

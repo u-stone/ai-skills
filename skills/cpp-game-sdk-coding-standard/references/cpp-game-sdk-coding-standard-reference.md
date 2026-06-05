@@ -193,7 +193,7 @@ If no project formatter exists, use the bundled fallback in:
 
 ```text
 references/config/.clang-format
-````
+```
 
 Portable defaults:
 
