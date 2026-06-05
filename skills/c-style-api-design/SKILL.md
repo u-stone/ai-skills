@@ -1,14 +1,47 @@
 ---
-name: c-api-design-for-scripting
+name: c-style-api-design
 description: >
   设计或审查 C/C++ API 时，确保 API 能被 Lua、Python（nanobind/pybind11/Cython/ctypes）、
   JavaScript（Emscripten/Node-FFI）、C#（P/Invoke）等脚本语言无歧义地封装。
   当用户提到 "C API 设计"、"封装给 Lua/Python/脚本"、"C ABI 边界"、"extern C 导出"、
   "跨语言 API"、"脚本绑定友好的 C API"、"设计 C API 给脚本用"、"opaque handle"、
   "callback 跨语言"、"避免 ABI 问题" 时使用。
+license: MIT
+compatibility: opencode
+metadata:
+  audience: native-sdk-engineers
+  workflow: cross-language-c-api-design
+  source: skills/c-style-api-design/SKILL.md
+  modes:
+    - design
+    - review
+    - interop-planning
 ---
 
 # Skill: 面向脚本语言绑定的 C-Style API 设计
+
+## 使用边界
+
+本 Skill 关注**面向脚本语言绑定的 C 风格 API 形状设计**。
+
+优先用于：
+
+- 设计可被 Lua/Python/C#/JavaScript 稳定封装的 C ABI；
+- 审查现有 C/C++ API 是否存在脚本绑定死角；
+- 规划 opaque handle、error code、callback、buffer、string、versioning 等跨语言边界；
+- 在真正写 nanobind/pybind11/Cython/P/Invoke/FFI 绑定前，先把 ABI 设计干净。
+
+不要把它当作主要 Skill 用于：
+
+- 通用 C++17 SDK 实现规范或更广泛的 ABI/导出/CMake 设计；
+- 直接生成 Python 轮子、editable install、stub、打包与分发流程；
+- repository-wide 的工程流程或项目运行规则。
+
+边界建议：
+
+- `cpp-game-sdk-coding-standard`：更广泛的 C++17 SDK / native library / CMake / public ABI 标准；
+- `cpp-python-bindings`：在 C ABI 已经设计清楚后，继续做 Python 绑定、包布局与 wheel 交付；
+- 本 Skill：聚焦“先把跨语言可封装的 C API 设计对”。
 
 ## 0. 核心问题
 
