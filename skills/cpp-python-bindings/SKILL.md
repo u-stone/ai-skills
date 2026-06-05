@@ -3,7 +3,8 @@ name: cpp-python-native-package
 description: >
   将 C++ 代码封装为标准 Python 原生扩展包，并通过 editable install 与 wheel 进行开发和交付。
   当用户提到 C++ 扩展、Python 绑定、pybind11、nanobind、Cython、SWIG、CFFI/ctypes、
-  .pyd、.so、.dylib、Python 模块打包、pip install -e .、wheel、scikit-build-core、CMake 时使用。
+  .pyd、.so、.dylib、Python 模块打包、pip install -e .、wheel、scikit-build-core、CMake、
+  IDE 自动补全、.pyi 存根、STABLE_ABI、Python ABI 兼容性 时使用。
 ---
 
 # Skill: C++ 原生扩展的 Python 包化与 Wheel 交付
@@ -20,892 +21,483 @@ description: >
 验证期：干净虚拟环境 pip install dist/*.whl 后 import 成功
 ```
 
-默认产物形态：
-
-```text
-<package>/
-├── __init__.py
-├── runtime.py              # 可选，Python facade
-├── _core.*.pyd / *.so      # C++ 原生扩展
-├── 依赖 dll/so/dylib       # 如有
-├── _core.pyi               # 可选
-└── py.typed                # 可选
-```
-
 ---
 
-## 1. 何时使用本 Skill
-
-当用户需求包含以下任一关键词或意图时使用：
-
-- C++ 封装 Python 模块
-- Python 原生扩展
-- pybind11 / nanobind / Cython / SWIG / CFFI / ctypes
-- `.pyd` / `.so` / `.dylib`
-- `PYBIND11_MODULE`
-- Python/C API
-- `pip install -e .`
-- `wheel`
-- `scikit-build-core`
-- CMake 构建 Python 扩展
-- C++ SDK 暴露给 Python
-- 游戏引擎 C++ Runtime 暴露给 Python 工具链
-
----
-
-## 2. 先判断用户当前阶段
+## 1. 先判断用户当前阶段
 
 根据用户描述，把任务归入一个阶段。
 
-### A. 从零创建项目
+### A. 从零创建项目 → 见 §2
 
-用户通常会说：
+### B. 已有 `.pyd` / `.so`，不知道放哪 → 见 §3
+
+### C. 已有 CMake 构建，想接入 Python 包 → 见 §4
+
+### D. import 失败或 wheel 失败 → 见 §10（错误处理决策树）
+
+---
+
+## 2. 从零创建项目的标准流程
+
+### 2.1 选择绑定方案
+
+| 场景 | 推荐方案 | 原因 |
+|---|---|---|
+| 普通 C++ 类/函数暴露给 Python | `pybind11` | 生态成熟，文档丰富 |
+| 新项目、大量绑定、追求更轻编译 | `nanobind` | 编译快 4 倍、二进制小 5 倍 |
+| Python-first、NumPy/Buffer 深度集成 | `Cython` | Python 语义和数据处理 |
+| 遗留 C/C++ 大接口快速导出 | `SWIG` | 自动化程度高 |
+| 只有稳定 C ABI | `CFFI` / `ctypes` | 简单但不适合复杂 C++ |
+
+默认推荐：`pybind11` + `scikit-build-core` + `CMake`（用户指定 nanobind 时切换）。
+
+### 2.2 包布局（多模块项目）
+
+当项目有多个 C++ 模块需要绑定时，使用 **按模块分层的布局**：
 
 ```text
-我要把 C++ 库封装成 Python 包
-帮我搭 pybind11 项目
-帮我写 CMake / pyproject.toml
+<project>/
+├── pyproject.toml
+├── CMakeLists.txt                    # 双模式 CMake（独立 + 引擎集成）
+├── cmake/
+│   └── FindEngine.cmake              # 查找预编译引擎库
+├── src/
+│   └── <package>/                    # Python 包根目录
+│       ├── __init__.py               # 顶层 facade + DLL 路径
+│       ├── py.typed
+│       └── <module>/                 # 每个 C++ 模块对应一个子包
+│           └── __init__.py           # 从 ._<ext> 重新导出 API
+├── bindings/
+│   └── <module>/                     # C++ 绑定代码
+│       ├── module.cpp                # NB_MODULE(_<ext>, m) 入口
+│       ├── <class>_bind.cpp          # 各类绑定
+│       └── ...
+├── examples/
+│   └── <module>/                     # 示例代码（按模块组织）
+├── tests/
+│   └── test_import.py
+├── scripts/
+│   ├── setup.ps1                     # 一键构建
+│   ├── build_wheel.ps1               # 打包 wheel
+│   └── add_module.py                 # 新模块脚手架
+└── docs/
+    └── binding-limitations.md        # 绑定限制参考
 ```
 
-执行：
+**命名规则**：
 
-1. 选择绑定方案。
-2. 创建 `src/<package>` 包布局。
-3. 写 `pyproject.toml`。
-4. 写 `CMakeLists.txt`。
-5. 写最小绑定代码。
-6. 添加 import 测试。
-7. 执行 `pip install -e .`。
-8. 执行 `python -m build --wheel`。
-9. 干净环境安装 wheel 验证。
+| 对象 | 规则 | 示例 |
+|---|---|---|
+| Python import 包名 | 小写，PEP 8 | `gwengine` |
+| C++ 扩展模块名 | 以下划线开头，表示内部实现 | `_gwp`=`gwengine.platform._gwp` |
+| 磁盘输出模块名 | 必须和 import 名一致 | `_gwp.*.pyd` / `_gwp.*.so` |
+| `NB_MODULE` 名 | 必须和 import 名一致 | `NB_MODULE(_gwp, m)` |
 
-### B. 已有 `.pyd` / `.so`，不知道放哪
+### 2.3 编写构建文件
 
-用户通常会说：
+详见 `references/build-templates.md`：
+- `pyproject.toml` 模板
+- `CMakeLists.txt` 模板（双模式：独立 + 引擎集成）
+- `Find<Engine>.cmake` 模板（预编译库发现）
 
-```text
-编译出的 .pyd 放到哪里？
-Python 怎么 import？
-要不要设置 PYTHONPATH？
+### 2.4 编写绑定代码
+
+详见 `references/binding-patterns.md`：
+- 静态类绑定（`def_static`）
+- 枚举绑定（`nb::enum_`）
+- 重载函数处理（lambda 消歧义）
+- 只读静态属性（`def_prop_ro_static`）
+- 返回策略（`rv_policy::reference`）
+
+### 2.5 Python facade
+
+```python
+# src/<package>/<module>/__init__.py
+import os, sys
+
+_pkg_dir = os.path.dirname(__file__)
+if sys.platform == "win32":
+    os.add_dll_directory(_pkg_dir)
+    # 也搜索引擎构建输出目录（开发期）
+    _engine_bin = os.environ.get("ENGINE_BIN_DIR", "")
+    if _engine_bin:
+        os.add_dll_directory(_engine_bin)
+
+from ._<ext> import ClassA, ClassB, EnumC
+
+__all__ = ["ClassA", "ClassB", "EnumC"]
 ```
 
-执行：
+### 2.6 构建与验证
 
-1. 建议放进 `src/<package>/`。
+```bash
+# 1) 开发安装
+pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=/path/to/build"
+
+# 2) 验证
+python -c "import <package>; from <package>.<module> import ClassA; print(ClassA.method())"
+
+# 3) 打 wheel
+python -m build --wheel
+
+# 4) 干净环境验证
+python -m venv .venv-test && .venv-test/Scripts/pip install dist/*.whl
+python -c "import <package>"
+```
+
+---
+
+## 3. 已有 `.pyd` / `.so`，不知道放哪
+
+1. 放进 `src/<package>/` 的对应子目录。
 2. 创建 `__init__.py` 作为 facade。
 3. 检查 native 模块名是否和初始化函数一致。
 4. 引导改成 `pip install -e .`。
 5. 不把 `PYTHONPATH` 作为正式方案。
-6. 如需分发，打 wheel。
 
-### C. 已有 CMake 构建，想接入 Python 包
+---
 
-用户通常会说：
+## 4. 已有 CMake 构建，想接入 Python 包
 
-```text
-CMake 已经能编译 C++，怎么生成 Python 包？
-怎么 install 到 package 里？
-怎么打 wheel？
+1. 保留已有 C++ target，不修改原有代码。
+2. 增加独立的 binding target（`nanobind_add_module` / `pybind11_add_module`）。
+3. `target_link_libraries(_<ext> PRIVATE <cpp_target>)`。
+4. 使用**双模式 CMake**：检测 `TARGET <cpp_target>` 是否存在来自动切换。
+
+```cmake
+if(TARGET ExistingModule)
+    # 引擎集成模式：直接链接 CMake target
+    set(ENGINE_LIBS ExistingModule)
+else()
+    # 独立模式：查找预编译库
+    include(cmake/FindEngine.cmake)
+endif()
 ```
 
-执行：
-
-1. 保留已有 C++ target。
-2. 增加 `_core` binding target。
-3. `target_link_libraries(_core PRIVATE <cpp_lib>)`。
-4. `install(TARGETS _core ... DESTINATION <package>)`。
-5. 如有动态库，安装进同一 package 目录。
-6. 配置 rpath / DLL 搜索路径。
+5. `install(TARGETS _<ext> ... DESTINATION <package>/<module>)`。
+6. 如有动态库，安装进同一 package 目录并配置 rpath。
 7. 用 `scikit-build-core` 接入 wheel。
 
-### D. import 失败或 wheel 失败
-
-用户通常会贴错误：
-
-```text
-ModuleNotFoundError
-DLL load failed
-cannot open shared object file
-dynamic module does not define module export function
-unresolved Py_NegativeRefcount
-```
-
-执行：
-
-1. 根据错误类型进入“错误处理决策树”。
-2. 先检查 wheel 内容。
-3. 再检查模块名、ABI、动态库路径。
-4. 最后检查构建配置和平台差异。
-
 ---
 
-## 3. 默认技术选型
+## 5. IDE 自动补全配置
 
-除非用户明确指定，否则按以下顺序推荐：
+`_<ext>.pyd` 是编译后的二进制，VS Code / Pylance 无法直接从 `.pyd` 提取类型信息。必须生成 **`.pyi` 类型存根文件**。
 
-| 场景 | 推荐方案 | 原因 |
-|---|---|---|
-| 普通 C++ 类/函数暴露给 Python | `pybind11` | 生态成熟，文档丰富，适合大多数项目 |
-| 新项目、大量绑定、追求更轻编译 | `nanobind` | 现代、轻量、生成绑定代码效率高 |
-| Python-first、NumPy/Buffer 深度集成 | `Cython` | 适合 Python 语义和数据处理 |
-| 遗留 C/C++ 大接口快速导出 | `SWIG` | 自动化程度高，但 Python 风格较弱 |
-| 只有稳定 C ABI | `CFFI` / `ctypes` | 简单，但不适合复杂 C++ 所有权模型 |
+### 5.1 生成 .pyi 存根
 
-默认推荐：
+nanobind 内置 stub 生成器：
 
-```text
-pybind11 + scikit-build-core + CMake
+```bash
+python -m nanobind.stubgen -m <package>.<module>._<ext> -O src/<package>/<module>
 ```
 
----
+生成产物 `_<ext>.pyi` 包含所有类、方法、枚举的类型签名。**应提交到 Git**。
 
-## 4. 必须遵守的设计规则
+### 5.2 VS Code 配置
 
-### 4.1 包布局规则
-
-必须使用标准 Python package：
-
-```text
-my_project/
-├── pyproject.toml
-├── CMakeLists.txt
-├── cpp/
-│   ├── engine.cpp
-│   ├── engine.h
-│   └── bindings.cpp
-├── src/
-│   └── myengine/
-│       ├── __init__.py
-│       ├── runtime.py
-│       └── py.typed
-└── tests/
-    └── test_import.py
-```
-
-### 4.2 命名规则
-
-| 对象 | 规则 | 示例 |
-|---|---|---|
-| Python import 包名 | 小写，PEP 8 | `myengine` |
-| PyPI/wheel 项目名 | 可与 import 名略有差异，但建议一致 | `myengine` |
-| C++ 扩展模块名 | 以下划线开头，表示内部实现 | `_core` |
-| CMake target 名 | 可带后缀保证唯一 | `_core_pybind11` |
-| 磁盘输出模块名 | 必须和 import 名一致 | `_core.*.pyd` / `_core.*.so` |
-| `PYBIND11_MODULE` 名 | 必须和 import 名一致 | `PYBIND11_MODULE(_core, m)` |
-
-正确：
-
-```cpp
-PYBIND11_MODULE(_core, m) {
-    m.def("init", []() {});
+```json
+// .vscode/settings.json
+{
+    "python.defaultInterpreterPath": "C:\\...\\python.exe",
+    "python.analysis.extraPaths": ["${workspaceFolder}/src"],
+    "python.autoComplete.extraPaths": ["${workspaceFolder}/src"]
 }
 ```
 
-```python
-from myengine import _core
-```
-
-错误：
-
-```cpp
-PYBIND11_MODULE(engine_core, m)
-```
-
-```python
-from myengine import _core
-```
-
-### 4.3 交付规则
-
-默认：
-
-```text
-开发期：pip install -e .
-发布期：python -m build --wheel
-```
-
-禁止把以下方式作为正式交付主线：
-
-```text
-手动复制 .pyd/.so
-长期依赖 PYTHONPATH
-zip + PYTHONPATH
-让用户手动改 sys.path
-```
-
-这些只能作为临时 smoke test。
-
----
-
-## 5. 标准实现模板
-
-### 5.1 pyproject.toml
-
-```toml
-[build-system]
-requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
-build-backend = "scikit_build_core.build"
-
-[project]
-name = "myengine"
-version = "0.1.0"
-description = "Python bindings for MyEngine"
-requires-python = ">=3.9"
-
-[tool.scikit-build]
-wheel.packages = ["src/myengine"]
-build-dir = "build/{wheel_tag}"
-```
-
-有 Python 依赖时：
-
-```toml
-[project]
-name = "myengine"
-version = "0.1.0"
-requires-python = ">=3.9"
-dependencies = [
-    "numpy>=1.24"
-]
-```
-
----
-
-### 5.2 顶层 CMakeLists.txt
-
-```cmake
-cmake_minimum_required(VERSION 3.20)
-
-project(myengine LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(pybind11 CONFIG REQUIRED)
-
-add_library(engine SHARED
-    cpp/engine.cpp
-)
-target_include_directories(engine PUBLIC cpp)
-
-pybind11_add_module(_core
-    cpp/bindings.cpp
-)
-target_link_libraries(_core PRIVATE engine)
-
-if(APPLE)
-  set_target_properties(_core PROPERTIES
-    BUILD_WITH_INSTALL_RPATH TRUE
-    INSTALL_RPATH "@loader_path"
-  )
-elseif(UNIX)
-  set_target_properties(_core PROPERTIES
-    BUILD_WITH_INSTALL_RPATH TRUE
-    INSTALL_RPATH "$ORIGIN"
-  )
-endif()
-
-install(TARGETS _core
-    LIBRARY DESTINATION myengine
-    RUNTIME DESTINATION myengine
-)
-
-install(TARGETS engine
-    LIBRARY DESTINATION myengine
-    RUNTIME DESTINATION myengine
-)
-```
-
-说明：
-
-- `_core` 是 Python 扩展模块。
-- `engine` 是底层 C++ 动态库。
-- 如果不需要独立动态库，也可以把 C++ 源码直接编进 `_core`。
-- 如果 `engine` 是动态库，必须安装进 wheel。
-- Linux/macOS 必须处理 rpath。
-- Windows 必须处理 DLL 搜索路径。
-
----
-
-### 5.3 绑定代码模板
-
-```cpp
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
-void engine_init();
-void engine_shutdown();
-void engine_tick(float dt);
-
-PYBIND11_MODULE(_core, m) {
-    m.doc() = "Native bindings for myengine";
-
-    m.def("init", &engine_init);
-    m.def("shutdown", &engine_shutdown);
-    m.def("tick", &engine_tick);
+```json
+// .vscode/launch.json — 调试配置
+{
+    "name": "Example: <name>",
+    "type": "debugpy",
+    "request": "launch",
+    "program": "${workspaceFolder}/examples/<module>/script.py",
+    "python": "${command:python.interpreterPath}",
+    "env": {
+        "ENGINE_BIN_DIR": "${workspaceFolder}/../../build/bin/Debug",
+        "PYTHONPATH": "${workspaceFolder}/src"
+    },
+    "justMyCode": false
 }
 ```
 
----
+关键：`ENGINE_BIN_DIR` 确保 DLL 可找到；`justMyCode: false` 允许单步进入 `.pyd`。
 
-### 5.4 Python facade 模板
+### 5.3 其他 IDE
 
-`src/myengine/__init__.py`：
+- **PyCharm**: 将 `src/` 标记为 Sources Root。
+- **通用**: 确保解释器是安装了包的版本（`pip install -e .` 注册到 site-packages）。
 
-```python
-import os
-import sys
+### 5.4 常见问题
 
-if sys.platform == "win32":
-    os.add_dll_directory(os.path.dirname(__file__))
+**VS Code 选择了错误 Python 版本** → `ModuleNotFoundError: No module named '<package>.<module>._<ext>'`。
 
-from ._core import init, shutdown, tick
-from .runtime import Engine
-
-__all__ = ["Engine", "init", "shutdown", "tick"]
-```
-
-`src/myengine/runtime.py`：
-
-```python
-from . import _core
-
-
-class Engine:
-    def __init__(self, config_path: str):
-        self._handle = _core.create_engine(config_path)
-
-    def tick(self, delta_time: float) -> None:
-        _core.tick(self._handle, delta_time)
-
-    def shutdown(self) -> None:
-        _core.destroy_engine(self._handle)
-```
+修复：`Ctrl+Shift+P` → `Python: Select Interpreter` → 选择安装了包的版本。或在 `settings.json` 中设置 `python.defaultInterpreterPath`。
 
 ---
 
-## 6. 标准执行步骤
+## 6. C/C++ 绑定限制与应对
 
-### 6.1 开发期
+不同 C++ 模式对绑定的友好程度不同。详见 `references/binding-limitations.md`。
 
-执行：
+### 快速对照表
 
-```bash
-pip install -e .
+| C/C++ 模式 | 支持 | 应对 |
+|-----------|------|------|
+| 静态成员函数、枚举、构造函数 | ✅ 直接 | `def_static` / `nb::enum_` / `nb::init<>` |
+| STL 容器 (`vector`, `map`, `string`) | ⚠️ 需显式 `#include` | `#include <nanobind/stl/vector.h>` 等 |
+| 函数重载 | ⚠️ 需消歧义 | Lambda 包装 |
+| 原始函数指针（C 回调） | ⚠️ 需适配器 | `nb::capsule` / 全局 `std::function` |
+| `void*` 不透明指针 | ⚠️ 需 capsule | `nb::capsule(ptr, "name")` |
+| 非内联静态常量 | ⚠️ 需 lambda getter | `def_prop_ro_static("x", [](nb::handle){ return X; })` |
+| printf 变参 | ❌ 需包装 | Lambda 接受 `std::string` |
+| 模板类 | ❌ 需显式实例化 | `nb::class_<RingBufferT<int>>` |
+| private/protected 成员 | ❌ 无法访问 | 仅通过 public 接口 |
+| 条件编译 (`#ifdef`) | ❌ 需镜像守卫 | 绑定代码中也加 `#ifdef` |
+| `#define` 宏冲突 (win32 `ERROR`) | — | `#undef` + 完全限定名 |
+
+### 检查清单（添加新绑定前）
+
 ```
-
-验证：
-
-```bash
-python -c "import myengine; print(myengine)"
-python -c "from myengine import _core; print(_core)"
-```
-
-运行测试：
-
-```bash
-pytest
-```
-
-如果 editable install 失败，不要继续做 wheel 分发，先修开发安装。
-
----
-
-### 6.2 构建 wheel
-
-执行：
-
-```bash
-pip install build
-python -m build --wheel
-```
-
-产物：
-
-```text
-dist/myengine-0.1.0-cp311-cp311-<platform>.whl
+[ ] 函数重载？ → lambda 消歧义
+[ ] void* 参数/返回值？ → 跳过或 nb::capsule
+[ ] 函数指针（回调）？ → 跳过或适配器
+[ ] 返回引用（非所有权）？ → rv_policy::reference
+[ ] printf 变参？ → lambda 包装为 std::string
+[ ] 模板类？ → 显式实例化
+[ ] static const 成员？ → def_prop_ro_static lambda
+[ ] 使用 std::vector/map？ → 包含对应 nanobind/stl/*.h
+[ ] #ifdef 守卫？ → 绑定代码中镜像
+[ ] private 成员需暴露？ → 仅在 public getter 存在时绑定
+[ ] windows.h ERROR 等宏冲突？ → #undef + 完全限定名
 ```
 
 ---
 
-### 6.3 干净环境验证 wheel
+## 7. 是否需要受限的 C/C++ 导出层
 
-Linux / macOS：
+### 问题
 
-```bash
-python -m venv .venv-test
-source .venv-test/bin/activate
-pip install dist/*.whl
-python -c "import myengine"
-python -c "from myengine import _core"
-```
+直接绑定现有的 C++ API 头文件时，会遇到：
+- 过于宽泛的接口（大量平台特定方法）
+- `void*` 句柄和函数指针回调
+- 复杂的 include 链导致不必要的依赖
+- 没有考虑 Python 侧的惯用法
 
-Windows PowerShell：
+### 推荐：添加一个薄 C ABI 适配层
 
-```powershell
-python -m venv .venv-test
-.venv-test\Scripts\Activate.ps1
-pip install dist\*.whl
-python -c "import myengine"
-python -c "from myengine import _core"
-```
+当以下条件任一条成立时，考虑在 C++ 库和 Python 绑定之间**插入一个受限的导出层**：
 
----
+1. **C++ 类有复杂生命周期**（需要 RAII、引用计数等）→ 用 `extern "C"` 函数包装创建/销毁
+2. **API 大量使用回调** → C 适配层将 Python callable 转为 `void*` context + 函数指针对
+3. **需要跨语言错误传递** → C 适配层将 C++ 异常转为错误码
+4. **需要瘦身接口** → 只暴露 Python 实际需要的子集
+5. **header 依赖链复杂** → 适配层头文件只 include 最少依赖
 
-### 6.4 检查 wheel 内容
+```cpp
+// thin_adapter.h —— 受限的 C ABI 导出层
+#pragma once
+#include <stdint.h>
 
-执行：
-
-```bash
-python -m zipfile -l dist/*.whl
-```
-
-必须包含：
-
-```text
-myengine/__init__.py
-myengine/_core.*.pyd 或 myengine/_core.*.so
-```
-
-如果有动态库依赖，还必须包含：
-
-```text
-myengine/engine.dll
-myengine/libengine.so
-myengine/libengine.dylib
-```
-
----
-
-## 7. 动态库加载规则
-
-### 7.1 Windows
-
-如果 `_core.pyd` 依赖 `engine.dll`，必须让 Python 能找到 DLL。
-
-推荐在 `__init__.py` 顶部：
-
-```python
-import os
-import sys
-
-if sys.platform == "win32":
-    os.add_dll_directory(os.path.dirname(__file__))
-```
-
-并确保 `engine.dll` 被安装到 package 目录：
-
-```cmake
-install(TARGETS engine
-    RUNTIME DESTINATION myengine
-)
-```
-
-### 7.2 Linux
-
-设置 `_core` 的 rpath：
-
-```cmake
-set_target_properties(_core PROPERTIES
-    BUILD_WITH_INSTALL_RPATH TRUE
-    INSTALL_RPATH "$ORIGIN"
-)
-```
-
-并确保依赖库安装到同目录：
-
-```cmake
-install(TARGETS engine
-    LIBRARY DESTINATION myengine
-)
-```
-
-### 7.3 macOS
-
-设置 `_core` 的 rpath：
-
-```cmake
-set_target_properties(_core PROPERTIES
-    BUILD_WITH_INSTALL_RPATH TRUE
-    INSTALL_RPATH "@loader_path"
-)
-```
-
-并确保依赖库安装到同目录：
-
-```cmake
-install(TARGETS engine
-    LIBRARY DESTINATION myengine
-)
-```
-
----
-
-## 8. 多平台 wheel
-
-原生扩展 wheel 是平台和 Python ABI 相关的。
-
-需要分别构建：
-
-```text
-Windows x64 + cp39/cp310/cp311/cp312
-Linux x86_64 + cp39/cp310/cp311/cp312
-macOS x86_64/arm64 + cp39/cp310/cp311/cp312
-```
-
-推荐使用 `cibuildwheel`。
-
-### pyproject.toml 配置
-
-```toml
-[tool.cibuildwheel]
-build = "cp39-* cp310-* cp311-* cp312-*"
-test-command = "python -c \"import myengine; from myengine import _core\""
-```
-
-### 构建
-
-```bash
-pip install cibuildwheel
-python -m cibuildwheel --output-dir wheelhouse
-```
-
-Linux 正式分发应生成 `manylinux` wheel，而不是只生成本机 `linux_x86_64.whl`。
-
----
-
-## 9. 绑定方案替换指南
-
-### 9.1 nanobind
-
-替换 `pybind11` 相关配置：
-
-```cmake
-find_package(nanobind CONFIG REQUIRED)
-
-nanobind_add_module(_core
-    cpp/bindings.cpp
-)
-target_link_libraries(_core PRIVATE engine)
-```
-
-其他包布局、install 规则、wheel 流程不变。
-
----
-
-### 9.2 Cython
-
-适用场景：
-
-```text
-Python-first API
-NumPy / buffer protocol
-已有 .pyx 代码
-```
-
-规则：
-
-- 不要手工修改生成后的 `.cxx` 作为长期方案。
-- 如果必须修补生成代码，必须在 CMake 中自动执行补丁。
-- Windows Debug 下要特别处理 `_DEBUG` 和 Python Debug ABI 问题。
-
-示例：
-
-```cmake
-set(CYTHON_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/cython_gen")
-
-add_custom_command(
-  OUTPUT ${CYTHON_OUTPUT_DIR}/_core.cxx
-  COMMAND ${CYTHON_EXECUTABLE} --cplus -3
-    -o ${CYTHON_OUTPUT_DIR}/_core.cxx
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/_core.pyx
-  COMMAND ${CMAKE_COMMAND}
-    -DGENERATED_FILE=${CYTHON_OUTPUT_DIR}/_core.cxx
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_debug.cmake
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/_core.pyx
-)
-```
-
-Windows Debug 补丁原则：
-
-```c
-#if defined(_DEBUG) && defined(_MSC_VER) && _MSC_VER >= 1929
-# include <corecrt.h>
+#ifdef __cplusplus
+extern "C" {
 #endif
-#undef _DEBUG
-#include "Python.h"
-#define _DEBUG 1
+
+typedef void* EngineHandle;
+typedef void (*MessageCallback)(const char* key, const char* value, void* ctx);
+
+EngineHandle engine_create(const char* config_path);
+void        engine_destroy(EngineHandle h);
+int         engine_tick(EngineHandle h, float dt);
+void        engine_register_callback(EngineHandle h, MessageCallback cb, void* ctx);
+
+#ifdef __cplusplus
+}
+#endif
 ```
 
-注意：每次重新生成 Cython `.cxx` 后，都必须自动重新应用补丁。
+优点：
+- nanobind/pybind11 绑定变得简单：只绑定 C 函数
+- 跨语言边界清晰（只传递基本类型 + 不透明句柄）
+- 错误处理统一（C++ 异常在适配层内部捕获，转为错误码返回）
+
+代价：
+- 多一层间接调用
+- 需要维护适配层代码
+
+**总结**：建议始终考虑添加薄 C ABI 适配层，尤其在以下场景中不可跳过：
+- 需要跨 Python 版本/跨平台分发
+- API 涉及复杂生命周期或回调
+- 原始 C++ 接口过于庞大（>50 个公共方法）
 
 ---
 
-### 9.3 SWIG
+## 8. Python ABI 兼容性与跨版本分发
 
-适用场景：
+### 8.1 原生扩展与 Python 版本绑定
 
-```text
-遗留 C/C++ 大接口
-多语言绑定
-快速导出已有头文件
+`.pyd` / `.so` 链接了特定的 `python3X.dll`，因此**默认绑定到一个 Python 次版本**：
+
+```
+_gwp.cp312-win_amd64.pyd  →  只能由 Python 3.12 加载
+_gwp.cp314-win_amd64.pyd  →  只能由 Python 3.14 加载
 ```
 
-建议：
+### 8.2 两种分发策略
 
-- SWIG 输出的 Python API 通常不够 Pythonic，应再包一层 facade。
-- Windows Debug 下，如遇 Python Debug 符号问题，添加：
+| 策略 | 构建次数 | 产物 | 适用场景 |
+|------|---------|------|---------|
+| **每版本构建** | N 次（每个 Python 版本） | `cp312-*.whl`, `cp313-*.whl`, ... | 需要支持 <3.12 的旧版本 |
+| **稳定 ABI**（推荐） | **1 次**（3.12+） | `cp312-abi3-*.whl` → 3.12/3.13/3.14 通用 | 可以要求 >=3.12 |
+
+### 8.3 启用 STABLE_ABI（nanobind）
 
 ```cmake
-target_compile_definitions(<target> PRIVATE
-  $<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Windows>>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>
+# CMakeLists.txt
+nanobind_add_module(_core ${SOURCES}
+    STABLE_ABI    # 一个 .pyd 兼容 Python 3.12+
 )
 ```
 
----
-
-### 9.4 CFFI / ctypes
-
-适用场景：
-
-```text
-只有稳定 C ABI
-函数数量少
-不暴露复杂 C++ 类所有权
+```toml
+# pyproject.toml
+[tool.scikit-build]
+wheel.py-api = "cp312"  # 标记为稳定 ABI wheel
 ```
 
-规则：
+**限制**：需要 Python >= 3.12（旧版本上该标志静默无效，回退为完整 ABI）。
 
-- C++ 层必须导出 `extern "C"` C ABI。
-- Python 侧负责对象生命周期包装。
-- `.pyi` 通常需要手写。
+**不影响**：nanobind 绑定语法、STL 转换、异常处理、GIL 管理均无变化。
 
----
+**额外注意**：
+- Python debug 构建（`python_d.exe`）不兼容 STABLE_ABI；需单独编译 debug 版本
+- Free-threaded Python（3.13t）需额外 `FREE_THREADED` 标志
+- 自定义 `nb::type_slots()` 使用少数 CPython 特有 slot 时不兼容（罕见）
 
-## 10. 类型存根 `.pyi`
+### 8.4 多 Python 版本的开发环境
 
-如果用户要求 IDE 补全、mypy、pyright 支持，可以生成 `.pyi`。
-
-| 方案 | 工具 | 命令 |
-|---|---|---|
-| nanobind | 内置 | `python -m nanobind.stubgen -m _core -O src/myengine` |
-| pybind11 | pybind11-stubgen | `pybind11-stubgen myengine._core -o src` |
-| Cython | stubgen-pyx | `stubgen-pyx src --output-dir src/myengine` |
-| SWIG | mypy stubgen | `stubgen -m myengine._core -o src` |
-| CFFI / ctypes | 手写 | 无通用自动化 |
-
-注意：
-
-- 生成存根前，模块必须能 import。
-- 存根不是构建成功的必要条件。
-- 如果发布类型信息，应包含 `py.typed`。
-
----
-
-## 11. 错误处理决策树
-
-### 11.1 `ModuleNotFoundError: No module named '<package>'`
-
-优先检查：
+每个 Python 安装需要分别 `pip install -e .`：
 
 ```bash
-python -c "import sys; print(sys.executable)"
-pip show <package>
+& "C:\Python312\python.exe" -m pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=..."
+& "C:\Python314\python.exe" -m pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=..."
 ```
+
+**VS Code**: 通过 `python.defaultInterpreterPath` 指定默认解释器，或 `Ctrl+Shift+P` 切换。
+
+---
+
+## 9. 多模块项目扩展
+
+从一个模块扩展到多个模块时的步骤：
+
+### 9.1 手动添加
+
+1. 创建 `bindings/<new_module>/` + `module.cpp`
+2. 创建 `src/<package>/<new_module>/__init__.py`
+3. 在 `CMakeLists.txt` 中添加 `nanobind_add_module(_<ext> ...)` + `target_link_libraries`
+4. 创建 `examples/<new_module>/` + 示例脚本
+5. 生成 `.pyi` 存根
+
+### 9.2 使用脚手架脚本
+
+```bash
+python scripts/add_module.py <new_module>
+```
+
+自动创建：绑定 C++ 骨架、Python facade、CMake target、更新 `__init__.py`。
+
+---
+
+## 10. 错误处理决策树
+
+### 10.1 `ModuleNotFoundError: No module named '<package>'`
 
 判断：
+- 没安装 → `pip install -e .`
+- 安装到错的 Python 版本 → 检查 `python -c "import sys; print(sys.executable)"`
+- 包布局错误 → 检查 `src/<package>/__init__.py`
+- VS Code 选择错误解释器 → `Ctrl+Shift+P` 选择安装了包的版本
 
-- 没安装：执行 `pip install -e .`
-- 安装到错的虚拟环境：切换解释器
-- 包布局错误：检查 `src/<package>/__init__.py`
-- wheel 没包含包：检查 `wheel.packages`
+### 10.2 `dynamic module does not define module export function`
 
----
+模块初始化函数名与文件名不匹配。检查 `NB_MODULE(_name, m)` 与 `.pyd` 文件名一致。
 
-### 11.2 `dynamic module does not define module export function`
+### 10.3 `DLL load failed while importing _<ext>`
 
-判断为 native 模块初始化函数名不匹配。
+Windows 常见。检查：
+- 引擎 DLL 是否在搜索路径中（`os.add_dll_directory`、`ENGINE_BIN_DIR` 环境变量）
+- **Debug/Release CRT 混用**：Debug 引擎 + Release 绑定 → 随机堆损坏
+  - 修复：统一构建配置（`cmake.define.CMAKE_BUILD_TYPE=Debug`）
+- 传递依赖是否齐全（FFmpeg、VLD、OpenSSL 等——仅 Debug 引擎加载时检查所有传递依赖）
+- VC++ runtime 是否安装
 
-检查：
+### 10.4 Linux `cannot open shared object file` / macOS `Library not loaded`
 
-- `PYBIND11_MODULE(_core, m)`
-- 生成文件名是否为 `_core.*.pyd` / `_core.*.so`
-- Python 是否导入 `myengine._core`
+设置 rpath + 确保依赖库安装到同目录。详见 §2.5 和 §4。
 
-修复：
+### 10.5 MSVC `invalid integer constant expression` (Log.h)
 
-```cpp
-PYBIND11_MODULE(_core, m)
-```
-
----
-
-### 11.3 `DLL load failed while importing _core`
-
-Windows 常见。
-
-检查：
-
-- `engine.dll` 是否在 wheel 的 `myengine/` 目录
-- `__init__.py` 是否调用 `os.add_dll_directory`
-- 是否混用了 Debug/Release CRT
-- 是否安装了 VC++ runtime
+`windows.h` 将 `ERROR` 定义为宏 → 与 `enum Error` 冲突。
+修复：`#undef ERROR` + 使用完全限定名 `namespace::Error`。
 
 ---
 
-### 11.4 `cannot open shared object file`
+## 11. 动态库加载规则
 
-Linux 常见。
+### 11.1 Windows
 
-检查：
+`__init__.py` 中调用 `os.add_dll_directory()`；引擎 DLL 安装到同目录。
 
-```bash
-python -m zipfile -l dist/*.whl
-```
+### 11.2 Linux
 
-确认 `.so` 是否存在。
+`INSTALL_RPATH "$ORIGIN"` 让 `.so` 在其自身目录搜索依赖。
 
-修复：
+### 11.3 macOS
 
-```cmake
-set_target_properties(_core PROPERTIES
-    INSTALL_RPATH "$ORIGIN"
-)
-```
-
-并安装依赖库到同目录。
-
----
-
-### 11.5 macOS `Library not loaded`
-
-检查：
-
-- 依赖 `.dylib` 是否在 package 目录
-- `_core` 是否设置 `@loader_path`
-- 是否需要修复 install name
-
-修复：
-
-```cmake
-set_target_properties(_core PROPERTIES
-    INSTALL_RPATH "@loader_path"
-)
-```
-
----
-
-### 11.6 Windows Debug 下 `Py_NegativeRefcount` / `Py_REF_DEBUG`
-
-常见于 Cython / SWIG。
-
-根因：
-
-```text
-MSVC /MDd 定义 _DEBUG
-Python.h 因 _DEBUG 打开 Py_DEBUG / Py_REF_DEBUG
-标准发行版 Python 没有 debug 符号
-```
-
-修复：
-
-- pybind11 / nanobind：通常已内置处理
-- SWIG：使用 `SWIG_PYTHON_INTERPRETER_NO_DEBUG`
-- Cython：生成 `.cxx` 后自动补丁，不要手工补一次了事
+`INSTALL_RPATH "@loader_path"` 同上。
 
 ---
 
 ## 12. 验收清单
 
-完成任务前必须检查：
-
 ```text
-[ ] 使用标准 src/<package> 包布局
-[ ] 有 pyproject.toml
-[ ] 有 CMakeLists.txt 或等价构建脚本
-[ ] native 模块在 package 内，而不是项目根目录
+[ ] 使用标准 src/<package> 包布局（多模块项目按模块分层）
+[ ] 有 pyproject.toml + CMakeLists.txt（双模式）
+[ ] native 模块在 package 内，非项目根目录
 [ ] C++ 模块名和 Python import 名一致
+[ ] .pyi 类型存根已生成并提交到 Git
+[ ] .vscode/settings.json 配置了 python.analysis.extraPaths
 [ ] pip install -e . 成功
 [ ] import <package> 成功
-[ ] import <package>._core 成功
 [ ] python -m build --wheel 成功
 [ ] 干净虚拟环境安装 wheel 成功
-[ ] wheel 内容包含 __init__.py 和 _core
 [ ] 若有动态库依赖，依赖库已打进 wheel
 [ ] Windows/Linux/macOS 动态库加载路径已处理
+[ ] STABLE_ABI 或每版本构建策略已确定
 [ ] 至少有一个 import 测试
+[ ] Binding limitations 检查清单已完成（§6）
 ```
-
-如果不能全部完成，在最终回复中明确说明未完成项和原因。
 
 ---
 
-## 13. 输出规范
+## 13. 最终原则
 
-回答用户时，根据任务类型输出对应内容。
-
-### 从零创建项目时
-
-输出：
-
-1. 推荐方案
-2. 目录结构
-3. `pyproject.toml`
-4. `CMakeLists.txt`
-5. 绑定代码
-6. Python facade
-7. 构建命令
-8. 验证命令
-
-### 修复已有项目时
-
-输出：
-
-1. 根因判断
-2. 修改的文件
-3. 修改理由
-4. 验证结果
-5. 剩余风险
-
-### 只问概念时
-
-输出：
-
-1. 推荐结论
-2. 原因
-3. 典型目录结构
-4. 最小命令
+- 默认不交付裸 native 模块。
+- 正确交付物：**一个可 pip install 的 wheel**。
+- C++ 负责性能敏感逻辑；Python package 负责稳定 API、安装体验和工具链集成；wheel 负责跨机器、跨团队、跨 CI 的可靠交付。
 
 ---
 
-## 14. 最终原则
+## 14. 参考文件
 
-默认不要交付裸 native 模块。
+详细模板和深入讨论见以下文件：
 
-正确交付物是：
-
-```text
-一个可 pip install 的 wheel
-```
-
-正确使用方式是：
-
-```python
-import myengine
-```
-
-内部实现可以是：
-
-```python
-from . import _core
-```
-
-核心原则：
-
-```text
-C++ 负责性能敏感逻辑；
-Python package 负责稳定 API、安装体验和工具链集成；
-wheel 负责跨机器、跨团队、跨 CI 的可靠交付。
-```
+| 文件 | 内容 |
+|------|------|
+| `references/build-templates.md` | pyproject.toml、CMakeLists.txt、FindEngine.cmake 完整模板 |
+| `references/binding-patterns.md` | 绑定代码模式：静态类、枚举、重载、回调、返回值策略 |
+| `references/binding-limitations.md` | C/C++ 模式限制与应对（13 种模式 + 检查清单） |
+| `references/python-abi-strategies.md` | Python ABI 版本策略、STABLE_ABI 详细分析、cibuildwheel 配置 |
+| `references/ide-autocomplete.md` | VS Code / PyCharm 自动补全配置、.pyi 存根生成、launch.json 调试 |
+| `references/multi-module-layout.md` | 多模块项目目录结构设计、扩展步骤、脚手架脚本 |
