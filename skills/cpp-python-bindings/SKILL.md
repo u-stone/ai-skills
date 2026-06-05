@@ -44,12 +44,12 @@ description: >
 | 场景 | 推荐方案 | 原因 |
 |---|---|---|
 | 普通 C++ 类/函数暴露给 Python | `pybind11` | 生态成熟，文档丰富 |
-| 新项目、大量绑定、追求更轻编译 | `nanobind` | 编译快 4 倍、二进制小 5 倍 |
+| 新项目、大量绑定、追求更轻编译 | `nanobind` | 编译快、二进制小、STABLE_ABI 支持清晰 |
 | Python-first、NumPy/Buffer 深度集成 | `Cython` | Python 语义和数据处理 |
 | 遗留 C/C++ 大接口快速导出 | `SWIG` | 自动化程度高 |
 | 只有稳定 C ABI | `CFFI` / `ctypes` | 简单但不适合复杂 C++ |
 
-默认推荐：`pybind11` + `scikit-build-core` + `CMake`（用户指定 nanobind 时切换）。
+默认推荐：`nanobind` + `scikit-build-core` + `CMake`。如果用户已有 pybind11 代码、团队标准或第三方示例，保留 pybind11，不为换框架而重写。
 
 ### 2.2 包布局（多模块项目）
 
@@ -60,7 +60,7 @@ description: >
 ├── pyproject.toml
 ├── CMakeLists.txt                    # 双模式 CMake（独立 + 引擎集成）
 ├── cmake/
-│   └── FindEngine.cmake              # 查找预编译引擎库
+│   └── Find<Library>.cmake           # 查找预编译 C++ 库（可选）
 ├── src/
 │   └── <package>/                    # Python 包根目录
 │       ├── __init__.py               # 顶层 facade + DLL 路径
@@ -88,17 +88,17 @@ description: >
 
 | 对象 | 规则 | 示例 |
 |---|---|---|
-| Python import 包名 | 小写，PEP 8 | `gwengine` |
-| C++ 扩展模块名 | 以下划线开头，表示内部实现 | `_gwp`=`gwengine.platform._gwp` |
-| 磁盘输出模块名 | 必须和 import 名一致 | `_gwp.*.pyd` / `_gwp.*.so` |
-| `NB_MODULE` 名 | 必须和 import 名一致 | `NB_MODULE(_gwp, m)` |
+| Python import 包名 | 小写，PEP 8 | `mypackage` |
+| C++ 扩展模块名 | 以下划线开头，表示内部实现 | `_core`=`mypackage.platform._core` |
+| 磁盘输出模块名 | 必须和 import 名一致 | `_core.*.pyd` / `_core.*.so` |
+| `NB_MODULE` 名 | 必须和 import 名一致 | `NB_MODULE(_core, m)` |
 
 ### 2.3 编写构建文件
 
 详见 `references/build-templates.md`：
 - `pyproject.toml` 模板
 - `CMakeLists.txt` 模板（双模式：独立 + 引擎集成）
-- `Find<Engine>.cmake` 模板（预编译库发现）
+- `Find<Library>.cmake` 模板（预编译库发现）
 
 ### 2.4 编写绑定代码
 
@@ -118,10 +118,10 @@ import os, sys
 _pkg_dir = os.path.dirname(__file__)
 if sys.platform == "win32":
     os.add_dll_directory(_pkg_dir)
-    # 也搜索引擎构建输出目录（开发期）
-    _engine_bin = os.environ.get("ENGINE_BIN_DIR", "")
-    if _engine_bin:
-        os.add_dll_directory(_engine_bin)
+    # 开发期可通过环境变量加入依赖 DLL 目录；变量名按项目替换。
+    _native_bin = os.environ.get("NATIVE_LIBRARY_BIN_DIR", "")
+    if _native_bin:
+        os.add_dll_directory(_native_bin)
 
 from ._<ext> import ClassA, ClassB, EnumC
 
@@ -132,7 +132,7 @@ __all__ = ["ClassA", "ClassB", "EnumC"]
 
 ```bash
 # 1) 开发安装
-pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=/path/to/build"
+pip install -e . --config-settings="cmake.define.NATIVE_LIBRARY_BUILD_DIR=/path/to/build"
 
 # 2) 验证
 python -c "import <package>; from <package>.<module> import ClassA; print(ClassA.method())"
@@ -165,12 +165,12 @@ python -c "import <package>"
 4. 使用**双模式 CMake**：检测 `TARGET <cpp_target>` 是否存在来自动切换。
 
 ```cmake
-if(TARGET ExistingModule)
-    # 引擎集成模式：直接链接 CMake target
-    set(ENGINE_LIBS ExistingModule)
+if(TARGET NativeLibrary)
+    # 集成模式：直接链接已有 CMake target
+    set(NATIVE_LIBRARY_TARGETS NativeLibrary)
 else()
     # 独立模式：查找预编译库
-    include(cmake/FindEngine.cmake)
+    include(cmake/FindNativeLibrary.cmake)
 endif()
 ```
 
@@ -189,7 +189,7 @@ endif()
 nanobind 内置 stub 生成器：
 
 ```bash
-python -m nanobind.stubgen -m <package>.<module>._<ext> -O src/<package>/<module>
+python -m nanobind.stubgen -m <package>.<module>._<ext> -o src/<package>/<module>
 ```
 
 生成产物 `_<ext>.pyi` 包含所有类、方法、枚举的类型签名。**应提交到 Git**。
@@ -214,14 +214,14 @@ python -m nanobind.stubgen -m <package>.<module>._<ext> -O src/<package>/<module
     "program": "${workspaceFolder}/examples/<module>/script.py",
     "python": "${command:python.interpreterPath}",
     "env": {
-        "ENGINE_BIN_DIR": "${workspaceFolder}/../../build/bin/Debug",
+        "NATIVE_LIBRARY_BIN_DIR": "${workspaceFolder}/../../build/bin/Debug",
         "PYTHONPATH": "${workspaceFolder}/src"
     },
     "justMyCode": false
 }
 ```
 
-关键：`ENGINE_BIN_DIR` 确保 DLL 可找到；`justMyCode: false` 允许单步进入 `.pyd`。
+关键：`NATIVE_LIBRARY_BIN_DIR` 确保 DLL 可找到；`justMyCode: false` 只影响 Python 调试器是否进入第三方 Python 代码。要调试 `.pyd` / `.so` 内的 C++，需要附加原生调试器（MSVC、LLDB 或 GDB）。
 
 ### 5.3 其他 IDE
 
@@ -303,13 +303,13 @@ python -m nanobind.stubgen -m <package>.<module>._<ext> -O src/<package>/<module
 extern "C" {
 #endif
 
-typedef void* EngineHandle;
+typedef void* NativeHandle;
 typedef void (*MessageCallback)(const char* key, const char* value, void* ctx);
 
-EngineHandle engine_create(const char* config_path);
-void        engine_destroy(EngineHandle h);
-int         engine_tick(EngineHandle h, float dt);
-void        engine_register_callback(EngineHandle h, MessageCallback cb, void* ctx);
+NativeHandle native_create(const char* config_path);
+void         native_destroy(NativeHandle h);
+int          native_tick(NativeHandle h, float dt);
+void         native_register_callback(NativeHandle h, MessageCallback cb, void* ctx);
 
 #ifdef __cplusplus
 }
@@ -325,7 +325,7 @@ void        engine_register_callback(EngineHandle h, MessageCallback cb, void* c
 - 多一层间接调用
 - 需要维护适配层代码
 
-**总结**：建议始终考虑添加薄 C ABI 适配层，尤其在以下场景中不可跳过：
+**总结**：先评估是否需要薄 C ABI 适配层，不要默认增加一层。以下场景中通常值得添加：
 - 需要跨 Python 版本/跨平台分发
 - API 涉及复杂生命周期或回调
 - 原始 C++ 接口过于庞大（>50 个公共方法）
@@ -339,8 +339,8 @@ void        engine_register_callback(EngineHandle h, MessageCallback cb, void* c
 `.pyd` / `.so` 链接了特定的 `python3X.dll`，因此**默认绑定到一个 Python 次版本**：
 
 ```
-_gwp.cp312-win_amd64.pyd  →  只能由 Python 3.12 加载
-_gwp.cp314-win_amd64.pyd  →  只能由 Python 3.14 加载
+_core.cp312-win_amd64.pyd       →  每版本 ABI，只能由 Python 3.12 加载
+_core.cp312-abi3-win_amd64.pyd  →  稳定 ABI，可由 Python 3.12+ 加载
 ```
 
 ### 8.2 两种分发策略
@@ -365,13 +365,13 @@ nanobind_add_module(_core ${SOURCES}
 wheel.py-api = "cp312"  # 标记为稳定 ABI wheel
 ```
 
-**限制**：需要 Python >= 3.12（旧版本上该标志静默无效，回退为完整 ABI）。
+**限制**：如果发布稳定 ABI wheel，`requires-python` 必须与 `wheel.py-api = "cp312"` 对齐，通常设为 `>=3.12`。如果必须支持 3.9-3.11，使用每版本构建，不要同时声明 cp312 稳定 ABI。
 
 **不影响**：nanobind 绑定语法、STL 转换、异常处理、GIL 管理均无变化。
 
 **额外注意**：
 - Python debug 构建（`python_d.exe`）不兼容 STABLE_ABI；需单独编译 debug 版本
-- Free-threaded Python（3.13t）需额外 `FREE_THREADED` 标志
+- Free-threaded Python（3.13t）需额外 `FREE_THREADED` 标志；目前 free-threaded 构建没有稳定 ABI，不能依赖 `STABLE_ABI`
 - 自定义 `nb::type_slots()` 使用少数 CPython 特有 slot 时不兼容（罕见）
 
 ### 8.4 多 Python 版本的开发环境
@@ -379,8 +379,8 @@ wheel.py-api = "cp312"  # 标记为稳定 ABI wheel
 每个 Python 安装需要分别 `pip install -e .`：
 
 ```bash
-& "C:\Python312\python.exe" -m pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=..."
-& "C:\Python314\python.exe" -m pip install -e . --config-settings="cmake.define.ENGINE_BUILD_DIR=..."
+& "C:\Python312\python.exe" -m pip install -e . --config-settings="cmake.define.NATIVE_LIBRARY_BUILD_DIR=..."
+& "C:\Python314\python.exe" -m pip install -e . --config-settings="cmake.define.NATIVE_LIBRARY_BUILD_DIR=..."
 ```
 
 **VS Code**: 通过 `python.defaultInterpreterPath` 指定默认解释器，或 `Ctrl+Shift+P` 切换。
@@ -426,7 +426,7 @@ python scripts/add_module.py <new_module>
 ### 10.3 `DLL load failed while importing _<ext>`
 
 Windows 常见。检查：
-- 引擎 DLL 是否在搜索路径中（`os.add_dll_directory`、`ENGINE_BIN_DIR` 环境变量）
+- 依赖 DLL 是否在搜索路径中（`os.add_dll_directory`、项目自定义 `*_BIN_DIR` 环境变量）
 - **Debug/Release CRT 混用**：Debug 引擎 + Release 绑定 → 随机堆损坏
   - 修复：统一构建配置（`cmake.define.CMAKE_BUILD_TYPE=Debug`）
 - 传递依赖是否齐全（FFmpeg、VLD、OpenSSL 等——仅 Debug 引擎加载时检查所有传递依赖）
@@ -495,7 +495,7 @@ Windows 常见。检查：
 
 | 文件 | 内容 |
 |------|------|
-| `references/build-templates.md` | pyproject.toml、CMakeLists.txt、FindEngine.cmake 完整模板 |
+| `references/build-templates.md` | pyproject.toml、CMakeLists.txt、Find<Library>.cmake 完整模板 |
 | `references/binding-patterns.md` | 绑定代码模式：静态类、枚举、重载、回调、返回值策略 |
 | `references/binding-limitations.md` | C/C++ 模式限制与应对（13 种模式 + 检查清单） |
 | `references/python-abi-strategies.md` | Python ABI 版本策略、STABLE_ABI 详细分析、cibuildwheel 配置 |

@@ -1,87 +1,60 @@
 # 多模块项目布局
 
-## 目录结构设计原则
+当一个 C++ 库有多个模块需要暴露给 Python，推荐使用一个 Python 顶层包，每个 C++ 模块对应一个 Python 子包和一个内部 native 扩展。
 
-当项目有多个 C++ 引擎模块需要绑定：
+## 目录结构
 
-1. **每个 C++ 模块 → 一个 Python 子包**（`gwengine.platform`、`gwengine.core`）
-2. **每个子包 → 一个 nanobind 扩展**（`_gwp`、`_gwcore`）
-3. **绑定代码和 Python facade 分离**（`bindings/` vs `src/`）
-4. **示例代码按模块镜像**（`examples/platform/`、`examples/core/`）
-
-## 完整布局
-
-```
+```text
 <project>/
 ├── pyproject.toml
 ├── CMakeLists.txt
 ├── cmake/
-│   └── FindEngine.cmake
+│   └── FindNativeLibrary.cmake
 ├── src/
 │   └── <package>/
-│       ├── __init__.py           # 顶层 facade + DLL 搜索
+│       ├── __init__.py
 │       ├── py.typed
-│       ├── platform/             # GWPlatform 子包
-│       │   └── __init__.py       # from ._gwp import ...
-│       ├── core/                 # 未来：GWCore 子包
+│       ├── platform/
+│       │   └── __init__.py       # from ._core import ...
+│       ├── core/
 │       │   └── __init__.py
-│       └── render/               # 未来：GWRenderEngine 子包
+│       └── render/
 │           └── __init__.py
 ├── bindings/
-│   ├── platform/                 # GWPlatform C++ 绑定
-│   │   ├── module.cpp            # NB_MODULE(_gwp, m)
+│   ├── platform/
+│   │   ├── module.cpp            # NB_MODULE(_core, m)
 │   │   ├── types.cpp
-│   │   ├── app_info.cpp
-│   │   └── ...
-│   ├── core/                     # 未来
-│   └── render/                   # 未来
+│   │   └── app_info.cpp
+│   ├── core/
+│   └── render/
 ├── examples/
 │   ├── run_all.py
-│   ├── platform/                 # 示例：GWPlatform
-│   │   ├── 01_system_info.py
-│   │   └── ...
-│   ├── core/                     # 未来
-│   └── render/                   # 未来
-├── tests/
-│   └── test_import.py
-├── scripts/
-│   ├── setup.ps1                 # 一键构建
-│   └── add_module.py             # 新模块脚手架
-└── docs/
-    └── binding-limitations.md
+│   ├── platform/
+│   ├── core/
+│   └── render/
+└── tests/
+    └── test_import.py
 ```
+
+## 命名规则
+
+| 对象 | 规则 | 示例 |
+|------|------|------|
+| Python 顶层包 | 小写、PEP 8 | `mypackage` |
+| Python 子包 | 对应 C++ 模块 | `mypackage.platform` |
+| native 扩展 | 下划线前缀，视为内部实现 | `mypackage.platform._core` |
+| C++ 模块入口 | 与扩展短名一致 | `NB_MODULE(_core, m)` |
+| CMake install 目录 | 与 import 目录一致 | `mypackage/platform` |
 
 ## 扩展新模块
 
-### 方式 A：脚手架脚本
+1. 创建 `bindings/<module>/module.cpp` 和绑定文件。
+2. 创建 `src/<package>/<module>/__init__.py`。
+3. 在 CMake 中添加一个 `nanobind_add_module(_<ext> ...)` target。
+4. 将 target 安装到 `<package>/<module>`。
+5. 生成并提交 `.pyi` 存根。
+6. 确保 `src/<package>/py.typed` 被包含进 wheel。
 
-```bash
-python scripts/add_module.py core       # → gwengine.core
-python scripts/add_module.py render     # → gwengine.render
-python scripts/add_module.py math       # → gwengine.math
-```
+## py.typed
 
-自动创建：
-- `bindings/<name>/module.cpp` + 骨架文件
-- `src/<package>/<name>/__init__.py`
-- 更新 `CMakeLists.txt`（添加 target）
-- 更新顶层 `__init__.py`
-
-### 方式 B：手动
-
-1. 创建 `bindings/<name>/module.cpp` + 绑定文件
-2. 创建 `src/<package>/<name>/__init__.py`
-3. `CMakeLists.txt` 添加 `nanobind_add_module(_<ext> ...)` + `target_link_libraries`
-4. 创建 `examples/<name>/` + 示例
-5. 生成 `.pyi` 存根
-
-## 文件命名约定
-
-| 文件类型 | 规则 | 示例 |
-|---------|------|------|
-| 模块入口 | `module.cpp` | `bindings/platform/module.cpp` |
-| 枚举/类型 | `<name>_types.cpp` | `types.cpp` |
-| 类绑定 | `<class_snake>.cpp` | `app_info.cpp` |
-| 绑定调度器 | `<name>_bind.cpp` | `platform_bind.cpp` |
-| Python facade | `src/<package>/<name>/__init__.py` | `src/gwengine/platform/__init__.py` |
-| nanobind 模块名 | `_<short>` | `_gwp`, `_gwcore`, `_gwrender` |
+`py.typed` 是 PEP 561 标记文件，告诉类型检查器这个包包含类型信息。顶层包中放一个 `py.typed` 即可；如果 wheel 中缺少该文件，IDE 可能忽略已生成的 `.pyi`。

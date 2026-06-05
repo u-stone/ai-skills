@@ -40,19 +40,19 @@ static void SetCommandLine(int argc, char** argv);
 ### 2. 原始函数指针
 
 ```cpp
-typedef void (*GRIT_NATIVE_MESSAGE_CALLBACK)(std::string, std::string);
-static void SetReceiveEngineMessageCallback(GRIT_NATIVE_MESSAGE_CALLBACK callback);
+using NativeMessageCallback = void (*)(std::string, std::string);
+static void set_receive_message_callback(NativeMessageCallback callback);
 ```
 
-修复：全局 `std::function` + lambda + `nb::capsule`（Phase 2 实现）
+修复：全局 `std::function` + lambda + `nb::capsule`，或设计显式回调适配器。
 
 ### 3. `void*` 指针
 
 ```cpp
-static void* GetWindow();
+static void* get_native_handle();
 ```
 
-修复：`nb::capsule(ptr, "HWND")` 或跳过不绑定
+修复：`nb::capsule(ptr, "NativeHandle")` 或跳过不绑定。
 
 ### 4. printf 变参
 
@@ -77,7 +77,7 @@ m.def("log_info", [](const std::string& msg) {
 #ifdef ERROR
 #  undef ERROR
 #endif
-nb::enum_<gw::platform::Error>(m, "Error", ...)
+nb::enum_<native::Error>(m, "Error", ...)
 ```
 
 ### 6. 非内联静态常量
@@ -92,19 +92,19 @@ class Permission {
 
 ### 7. Debug/Release CRT 混用
 
-Debug 引擎 DLL + Release .pyd → 堆损坏（随机 crash）。
+C++ 依赖库 Debug 构建 + Release .pyd → 堆损坏（随机 crash）。
 
-修复：`-Ccmake.define.CMAKE_BUILD_TYPE=Debug` 匹配引擎配置
+修复：`-Ccmake.define.CMAKE_BUILD_TYPE=Debug` 匹配依赖库配置。
 
 ### 8. 条件编译
 
 ```cpp
-#if defined(GW_ENABLE_IMGUI)
-    static bool GetEnableImGui();
+#if defined(NATIVE_ENABLE_FEATURE_X)
+    static bool get_enable_feature_x();
 #endif
 ```
 
-修复：绑定代码中镜像守卫 `#if defined(GW_ENABLE_IMGUI)`
+修复：绑定代码中镜像守卫 `#if defined(NATIVE_ENABLE_FEATURE_X)`
 
 ### 9. 模板类
 
