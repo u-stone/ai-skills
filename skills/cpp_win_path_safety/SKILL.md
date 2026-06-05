@@ -1,3 +1,10 @@
+---
+name: cpp_win_path_safety
+description: Systematic C++ path safety logic framework for AI agents — resolves std::filesystem::path encoding issues on Windows across C++17 and C++20 standards.
+metadata:
+  source: skills/cpp_win_path_safety/SKILL.md
+---
+
 This is the definitive **Systematic C++ Path Handling Skill** for AI Agents. It is designed to be easily "activated" by an LLM or Agentic workflow to handle Windows path encoding issues across different C++ standards.
 
 ---

@@ -1,13 +1,13 @@
 ---
 name: engineering-master
-description: Implements high-rigor industrial software engineering workflows. Use when managing complex, long-term projects that require atomic iterations, strict SSOT alignment, and mandatory manual code reviews.
+description: Implements high-rigor industrial software engineering workflows (Plan-Align-Execute-Commit-Review cycle). Use when managing complex, long-term projects that require atomic iterations, strict SSOT alignment, and mandatory manual code reviews.
 ---
 
 # Engineering Master
 
 ## Overview
 
-Engineering Master transforms Gemini CLI into a high-rigor implementation agent. It enforces a "Plan-Align-Execute-Commit-Review" cycle to ensure architectural integrity and code quality in complex C++ or other large-scale software projects.
+Engineering Master enforces a high-rigor "Plan-Align-Execute-Commit-Review" implementation cycle to ensure architectural integrity and code quality in complex C++ or other large-scale software projects.
 
 ## Core Principles
 

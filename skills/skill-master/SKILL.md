@@ -1,12 +1,14 @@
 ---
 name: skill-master
-description: A meta-skill for managing, auditing, and optimizing the Gemini CLI skill ecosystem. Use this skill when creating new skills, updating existing ones, or auditing the skill library. It ensures the `skills_map.md` registry is kept in sync.
+description: A meta-skill for managing, auditing, and optimizing a skill ecosystem. Use this skill when creating new skills, updating existing ones, or auditing the skill library. It references a `skills_map.md` registry (Gemini-era convention).
 ---
 
 # Skill Master: The Guardian of Skills
 
 This skill empowers you to act as the architect of the Gemini CLI skill library. 
 Its primary directive is to ensure high quality, consistency, and discoverability across all skills.
+
+> **Note**: References to `~/.gemini/skills_map.md` reflect a legacy Gemini CLI registry convention. For repo-local audits that lack a Gemini registry, prefer scanning local `SKILL.md` frontmatter and directory structure over assuming a remote registry path.
 
 ## Core Workflows
 

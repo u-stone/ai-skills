@@ -1,12 +1,14 @@
 ---
 name: project-launcher
-description: 自动识别项目类型并应用 ~/.gemini/rules/ 下的规则模版。
+description: 自动识别项目类型并应用 ~/.gemini/rules/ 下的规则模版 (Gemini 运行时约定 / Gemini-era convention)。
 triggers: ["init project", "初始化项目", "开始新项目", "new project"]
 ---
 
 # 执行逻辑
 
-当你检测到用户想要开始一个新项目，或者当前目录缺少 `GEMINI.md` 时，必须执行以下流程：
+当你检测到用户想要开始一个新项目，或者当前目录缺少 `GEMINI.md`（Gemini 运行时约定）时，必须执行以下流程：
+
+> **注意**：`~/.gemini/rules/` 和 `GEMINI.md` 是 Gemini 运行时的约定路径；在非 Gemini AI 运行时环境中，请将路径替换为对应运行时的规则目录和项目配置文件约定。
 
 ## 1. 模版扫描 (Scan)
 - 自动读取 `~/.gemini/rules/` 目录下的所有以 `template_` 开头的 `.md` 文件。
