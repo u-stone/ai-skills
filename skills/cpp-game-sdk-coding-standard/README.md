@@ -39,7 +39,7 @@ Use this skill for C++17 native SDK work involving:
 * symbol visibility;
 * ownership, lifetime, threading, and error handling;
 * high-performance runtime constraints;
-* project documentation layout, especially `doc/` architecture design documents;
+* project documentation layout, especially `docs/` architecture design documents;
 * fixed `scripts/workflow.py` CLI and standardized subcommands;
 * portable formatting and text-normalization defaults.
 
@@ -149,6 +149,6 @@ Before copying `.clang-format`, `.editorconfig`, or `.gitattributes` into a targ
 * [ ] Bundled reference files exist.
 * [ ] Config files are intentional copies or deliberate adaptations.
 * [ ] README and SKILL agree on use cases and exclusions.
-* [ ] Project-facility requirements include `doc/` for architecture design documentation.
+* [ ] Project-facility requirements include `docs/` for architecture design documentation.
 * [ ] Workflow-script requirements mandate Python and the standard subcommand set.
 * [ ] Strict SDK mode includes ABI, ownership, threading, and export checks.

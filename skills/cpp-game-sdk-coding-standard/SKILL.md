@@ -1,6 +1,6 @@
 ---
 name: cpp-game-sdk-coding-standard
-description: Use when writing, reviewing, or refactoring C++17 native library, native plugin, middleware, or game SDK code involving target-based CMake, mandatory project-level unit-test/example/doc/Python-workflow facilities, module directory layout with tests/examples, GoogleTest-based unit tests, architecture design documentation, cross-platform builds, public C++ headers, exported symbols, optional explicitly requested C-style APIs, ownership/lifetime rules, performance constraints, or bundled formatting/config migration.
+description: Use when writing, reviewing, or refactoring C++17 native library, native plugin, middleware, or game SDK code involving target-based CMake, mandatory project-level unit-test/example/docs/Python-workflow facilities, module directory layout with tests/examples, GoogleTest-based unit tests, architecture design documentation, cross-platform builds, public C++ headers, exported symbols, optional explicitly requested C-style APIs, ownership/lifetime rules, performance constraints, or bundled formatting/config migration.
 license: MIT
 compatibility: opencode
 metadata:
@@ -31,7 +31,7 @@ Use this skill for:
 - writing target-based CMake, install rules, package exports, or dependency wiring;
 - checking that a native project has first-class unit-test, example, documentation, and workflow-script facilities before AI-assisted coding;
 - designing module directory structures with module-local `tests/` and `examples/` folders;
-- designing the project-level `doc/` documentation folder, especially architecture design documents;
+- designing the project-level `docs/` documentation folder, especially architecture design documents;
 - adding or reviewing C++ unit tests, especially GoogleTest-based tests;
 - designing static/shared native library layout;
 - reviewing high-performance runtime or system programming code;
@@ -43,7 +43,7 @@ Typical triggers:
 - "write the CMake target for this SDK/native library"
 - "make this project ready for AI-assisted C++ coding"
 - "design this module folder layout with tests and examples"
-- "add the architecture design docs under doc/"
+- "add the architecture design docs under docs/"
 - "add GoogleTest unit tests for this native module"
 - "design a stable C API over this C++ implementation"
 - "make this Visual Studio target show the right headers and sources"
@@ -224,7 +224,7 @@ If a repository-specific rule conflicts with this portable standard, the reposit
 * Use target-based CMake only.
 * Do not use global `include_directories`, `link_libraries`, or global compile options.
 * Any project that activates this skill must have three first-class facilities before non-trivial AI-assisted coding proceeds: a unit-test submodule, an example-code submodule, and a documentation submodule.
-* Name those facilities `tests/`, `examples/`, and `doc/` by default. If repository-local naming already differs, map the local names explicitly and verify they serve the same roles.
+* Name those facilities `tests/`, `examples/`, and `docs/` by default. If repository-local naming already differs, map the local names explicitly and verify they serve the same roles.
 * The unit-test facility stores automated unit tests and should use GoogleTest as the default C++ test framework unless repository-local rules require another framework.
 * The example facility stores runnable sample code that exercises real module usage; it is not a dump for ad-hoc scratch programs.
 * The documentation facility stores project documentation, primarily architecture design documents, module-boundary explanations, and key technical decisions.
@@ -292,7 +292,7 @@ For CMake changes, verify:
 
 * target-based commands only;
 * no global include/link/compile pollution;
-* the project has first-class `tests/`, `examples/`, and `doc/` facilities, or equivalent locally named unit-test/example/documentation submodules are explicitly mapped;
+* the project has first-class `tests/`, `examples/`, and `docs/` facilities, or equivalent locally named unit-test/example/documentation submodules are explicitly mapped;
 * the project has a `scripts/workflow.py` CLI exposing `configure`, `build`, `test`, `unit`, `examples`, `lint`, `format`, `tidy`, and `workflow` subcommands;
 * missing project-level unit-test/example/documentation facilities are treated as blockers before production code changes;
 * each C++ module layout includes `tests/` for unit tests and `examples/` for sample code, or an explicit exception rationale is documented;
@@ -315,7 +315,7 @@ Run only the relevant checks for the change.
 * Format: `clang-format --dry-run -Werror <files>` or project equivalent.
 * Build: configure and build Debug; add Release/shared/static variants when relevant.
 * Structure: verify project-level unit-test, example, documentation, and workflow-script facilities exist and are wired into the repository's build or documentation workflow where applicable.
-* Documentation: verify `doc/` exists and contains architecture design documentation for the SDK or native library surface.
+* Documentation: verify `docs/` exists and contains architecture design documentation for the SDK or native library surface.
 * Tests: GoogleTest unit tests under module-local `tests/`, run through `ctest --test-dir build --output-on-failure` or the project equivalent.
 * Examples: build and run at least one relevant example from the project/module `examples/` facility when behavior is user-visible or integration-facing.
 * Workflow script: verify `scripts/workflow.py` prints help with `-h`/`--help` and exposes `configure`, `build`, `test`, `unit`, `examples`, `lint`, `format`, `tidy`, and `workflow` subcommands.

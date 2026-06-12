@@ -474,7 +474,7 @@ target_compile_features(game_sdk PUBLIC cxx_std_17)
 CMake checklist:
 
 * the project has three first-class AI-coding facilities: a unit-test submodule, an example-code submodule, and a documentation submodule;
-* the default facility names are `tests/`, `examples/`, and `doc/`; if local names differ, the mapping is explicit and equivalent;
+* the default facility names are `tests/`, `examples/`, and `docs/`; if local names differ, the mapping is explicit and equivalent;
 * missing project-level unit-test/example/documentation facilities are treated as setup blockers before production code changes;
 * the project has a `scripts/workflow.py` CLI exposing `configure`, `build`, `test`, `unit`, `examples`, `lint`, `format`, `tidy`, and `workflow` subcommands;
 * each module is a target;
@@ -504,7 +504,7 @@ game_project/
   include/game_sdk/
   src/
   modules/
-  doc/
+  docs/
   examples/
   tests/
   tools/
@@ -515,7 +515,7 @@ game_project/
   .gitattributes
 ```
 
-For AI-assisted C++ coding, `tests/`, `examples/`, `doc/`, and `scripts/` are mandatory engineering facilities, not optional niceties. `tests/` is the unit-test submodule and should be wired to GoogleTest by default. `examples/` is the runnable example-code submodule and should contain sample programs that exercise real intended usage. `doc/` is the documentation submodule and should primarily store architecture design documents, module-boundary explanations, and key technical decisions. `scripts/` should contain the canonical local-development and CI workflow entry point at `scripts/workflow.py`. The canonical entry point must not be a `.ps1`, `.bat`, or `.sh` script; platform-specific wrappers may exist only as optional thin delegates to the Python CLI. If a project uses different local names for non-script facilities, document the name mapping before editing production code.
+For AI-assisted C++ coding, `tests/`, `examples/`, `docs/`, and `scripts/` are mandatory engineering facilities, not optional niceties. `tests/` is the unit-test submodule and should be wired to GoogleTest by default. `examples/` is the runnable example-code submodule and should contain sample programs that exercise real intended usage. `docs/` is the documentation submodule and should primarily store architecture design documents, module-boundary explanations, and key technical decisions. `scripts/` should contain the canonical local-development and CI workflow entry point at `scripts/workflow.py`. The canonical entry point must not be a `.ps1`, `.bat`, or `.sh` script; platform-specific wrappers may exist only as optional thin delegates to the Python CLI. If a project uses different local names for non-script facilities, document the name mapping before editing production code.
 
 The `scripts/workflow.py` CLI must support `-h`/`--help` and expose stable subcommands named:
 
@@ -605,7 +605,7 @@ ctest --test-dir build --output-on-failure
 
 When a module is added or restructured, verify that its `tests/` directory is wired into the build/test flow and that its `examples/` directory contains at least one runnable sample or a documented exception.
 
-Before non-trivial AI-assisted coding, verify the project-level unit-test facility exists, is buildable, and runs through CTest or the local test runner. Prefer GoogleTest for C++ unit tests unless the repository has already standardized on another framework. Also verify the example facility exists and can build/run at least one representative example. Verify the `doc/` facility exists and contains architecture design documentation for the SDK or native library surface. Verify `scripts/workflow.py` prints help with `-h`/`--help` and exposes the standard subcommands.
+Before non-trivial AI-assisted coding, verify the project-level unit-test facility exists, is buildable, and runs through CTest or the local test runner. Prefer GoogleTest for C++ unit tests unless the repository has already standardized on another framework. Also verify the example facility exists and can build/run at least one representative example. Verify the `docs/` facility exists and contains architecture design documentation for the SDK or native library surface. Verify `scripts/workflow.py` prints help with `-h`/`--help` and exposes the standard subcommands.
 
 ---
 
