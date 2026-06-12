@@ -44,15 +44,13 @@ Typical triggers:
 ## Do not use me as the primary skill for
 
 - tiny localized edits that can be safely completed directly;
-- repository-wide operating rules;
-- extracting reusable engineering protocols from local conventions;
+- repository-wide AI coding governance, operating rules, and team engineering discipline;
 - language-specific C++ / CMake implementation standards;
 - tasks where the user only wants a quick answer or explanation.
 
 Prefer instead:
 
-- `agentic-project-playbook` for repository-specific operating playbooks;
-- `portable-authoring-protocol` for protocol extraction and migration;
+- `team-ai-coding-governance` for repository/team AI coding governance, source-of-truth, verification, docs, and git discipline;
 - `cpp-game-sdk-coding-standard` for implementation-level C++ and CMake rules.
 
 ---

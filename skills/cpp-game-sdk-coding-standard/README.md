@@ -13,7 +13,7 @@ It packages:
 ## Package layout
 
 ```text
-.opencode/skills/cpp-game-sdk-coding-standard/
+cpp-game-sdk-coding-standard/
 ├── SKILL.md
 ├── README.md
 └── references/
@@ -31,14 +31,16 @@ It packages:
 
 Use this skill for C++17 native SDK work involving:
 
-* public C ABI design;
-* internal C++ implementation;
+* C++ public headers and exported symbols by default;
+* explicitly requested C-style API design over internal C++ implementation;
 * CMake target design;
 * cross-platform native libraries;
 * static/shared SDK packaging;
 * symbol visibility;
 * ownership, lifetime, threading, and error handling;
 * high-performance runtime constraints;
+* project documentation layout, especially `doc/` architecture design documents;
+* fixed `scripts/workflow.py` CLI and standardized subcommands;
 * portable formatting and text-normalization defaults.
 
 ---
@@ -50,12 +52,11 @@ Do not use this skill as the primary source for:
 * repository-wide day-to-day operating rules;
 * project management workflow;
 * multi-agent execution methodology;
-* non-C++ work with no native SDK/CMake/ABI concern.
+* non-C++ work with no native SDK/CMake/export concern.
 
 Prefer:
 
-* `agentic-project-playbook` for repository operating rules;
-* `portable-authoring-protocol` for protocol extraction and migration;
+* `team-ai-coding-governance` for team/repository AI coding governance, source-of-truth, verification, docs, and git discipline;
 * `plan-execute-verify-workflow` for complex task execution methodology.
 
 ---
@@ -66,37 +67,40 @@ Prefer:
 | ---------- | ---------------------------------------------------- | -------------------------------- |
 | Quick      | small review, small fix, formatting/naming check     | short finding + verification     |
 | Standard   | normal SDK/native library implementation             | design + code/CMake + checks     |
-| Strict SDK | public ABI, exports, packaging, binary compatibility | full ABI/checklist-driven output |
+| Strict SDK | public headers, exports, packaging, binary compatibility, or explicit C-style APIs | full API/export/checklist-driven output |
 
-Default to Standard mode unless the task is clearly tiny or public ABI-sensitive.
+Default to Standard mode unless the task is clearly tiny or public API/export-sensitive.
 
 ---
 
 ## How to use
 
-Project-local placement: `.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md`
+Install the package under the skills directory used by the host environment.
+Keep the folder name `cpp-game-sdk-coding-standard` and load it by name.
 
-Agents can load it by name: `cpp-game-sdk-coding-standard`
+Minimum skill entrypoint inside the installed package:
+
+`cpp-game-sdk-coding-standard/SKILL.md`
 
 Example prompts:
 
 * "Use `cpp-game-sdk-coding-standard` to design this native SDK API."
-* "Review this public header for ABI safety."
+* "Review this public header and exported symbols for SDK safety."
 * "Write a CMake target for this native library."
 * "Create an SDK skeleton with install/package exports."
 * "Apply the bundled `.clang-format`, `.editorconfig`, and `.gitattributes` defaults to a new repo."
 
 ---
 
-## Copying to another repository
+## Copying to another environment
 
 Copy the whole folder:
 
-`<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/`
+`<skills-root>/cpp-game-sdk-coding-standard/`
 
 Minimum required file:
 
-`<target-repo>/.opencode/skills/cpp-game-sdk-coding-standard/SKILL.md`
+`<skills-root>/cpp-game-sdk-coding-standard/SKILL.md`
 
 Recommended copy includes the reference and config files.
 
@@ -107,10 +111,12 @@ Recommended copy includes the reference and config files.
 Review and update:
 
 * SDK name;
-* public C API prefix;
+* public C-style API prefix, only when such an API is explicitly required;
 * supported platforms;
 * compiler baseline;
 * CMake minimum version;
+* documentation folder policy and architecture design document expectations;
+* project-specific subcommand implementation details while keeping `workflow.py` as the fixed entry-point name;
 * package/export naming;
 * static/shared library policy;
 * exception policy;
@@ -143,5 +149,6 @@ Before copying `.clang-format`, `.editorconfig`, or `.gitattributes` into a targ
 * [ ] Bundled reference files exist.
 * [ ] Config files are intentional copies or deliberate adaptations.
 * [ ] README and SKILL agree on use cases and exclusions.
+* [ ] Project-facility requirements include `doc/` for architecture design documentation.
+* [ ] Workflow-script requirements mandate Python and the standard subcommand set.
 * [ ] Strict SDK mode includes ABI, ownership, threading, and export checks.
-

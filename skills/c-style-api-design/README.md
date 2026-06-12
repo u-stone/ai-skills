@@ -42,7 +42,7 @@ Prefer:
 
 - `cpp-game-sdk-coding-standard` for broader C++17 SDK/native-library/CMake/ABI implementation rules;
 - `cpp-python-bindings` for downstream Python binding, package layout, and wheel delivery;
-- `agentic-project-playbook` for repository-specific operating rules.
+- `team-ai-coding-governance` for team/repository AI coding governance, verification, docs, and git discipline.
 
 ---
 

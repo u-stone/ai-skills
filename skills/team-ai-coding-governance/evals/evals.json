@@ -1,0 +1,41 @@
+{
+  "skill_name": "team-ai-coding-governance",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new data validation module for this project and make sure it is ready for team use.",
+      "expected_output": "Triggers governance workflow, plans implementation with unit tests, runnable example, docs decision, warning/error-free verification, and git commit discipline.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Add a new C++ module for loading texture metadata.",
+      "expected_output": "Uses team governance and routes C++ implementation details to cpp-game-sdk-coding-standard without forcing C-style API unless explicitly requested.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "This folder is not under git. Start a new module here.",
+      "expected_output": "Initializes git unless forbidden, excludes generated/intermediate files, and commits only after verified no-warning/no-error build, tests, and examples.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Replace the caching algorithm and add a third-party dependency.",
+      "expected_output": "Requires docs decision for algorithm and dependency rationale, exact documentation, tests/examples as appropriate, and verified build/runtime behavior.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "The old plan says to use Make, but the current build config uses CMake.",
+      "expected_output": "Treats active build configuration as authoritative, marks the old plan as historical unless reactivated, and states uncertainty if source status is unclear.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Commit the completed module, including anything needed.",
+      "expected_output": "Inspects status and diff, stages only intended source/tests/examples/docs/config, and excludes generated intermediates, caches, sessions, and unrelated files.",
+      "files": []
+    }
+  ]
+}

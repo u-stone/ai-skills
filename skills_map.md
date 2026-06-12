@@ -14,6 +14,7 @@ Ideally, the `skill-master` skill should be used to maintain this file automatic
 | **dmp-learning-accelerator** | 1.0.1 | 2026-03-04 | Active | Requires manual scaffold execution | Deep Mastery Protocol (DMP) — a rapid-bootstrap methodology for programming learning projects. Fuses PBL, the Feynman Technique, agile development, and long-term memory engineering into a single executable AI-collaboration protocol. |
 | **skill-creator** | 0.32.1 | 2026-03-04 | Active | Built-in | Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Gemini CLI's capabilities with specialized knowledge, workflows, or tool integrations. |
 | **engineering-master** | 1.0.0 | 2026-03-04 | Active | Project-specific files (plan.md, etc.) required | Implements high-rigor industrial software engineering workflows. Enforces a Plan-Align-Execute-Commit-Review cycle for complex projects. |
+| **team-ai-coding-governance** | 1.0.0 | 2026-06-12 | Active | Requires project command bindings | Language-neutral team AI-assisted coding governance: source-of-truth precedence, tests/examples/docs, warning-free verification, git discipline, and C/C++ skill routing. |
 
 ## Schema
 - **Version**: Semantic Versioning (Major.Minor.Patch)

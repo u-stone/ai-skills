@@ -9,7 +9,7 @@ It assumes CMake and cross-platform support across Windows, macOS, Linux, Androi
 Priorities:
 
 1. correctness;
-2. ABI stability;
+2. public API and export stability;
 3. maintainability;
 4. testability;
 5. cross-platform compatibility;
@@ -66,14 +66,14 @@ Include code, CMake, and relevant verification commands.
 
 Use for:
 
-- public SDK ABI;
-- exported functions;
-- public headers;
+- public SDK headers;
+- exported symbols;
+- explicitly requested C-style APIs;
 - shared library exports;
 - install/package exports;
 - binary compatibility.
 
-Must include ABI, ownership, thread-safety, error handling, symbol, and packaging checks.
+Must include public API/export, ownership, thread-safety, error handling, symbol, packaging, and optional C-style ABI checks.
 
 ---
 
@@ -141,14 +141,14 @@ Use for SDKs, shared libraries, static libraries, native plugins, middleware, an
 
 Rules:
 
-- public exported functions use C ABI;
-- public exported functions use `extern "C"`;
-- public exported functions use explicit export macros;
-- public SDK ABI must not expose C++ classes, STL containers, exceptions, templates, references, or overloads;
+- default public SDK surface is C++ headers with explicit exported symbols;
+- public exported symbols use explicit export macros;
+- C-style ABI rules apply only when the user explicitly asks for a C-style API or an integration surface requires one;
+- explicitly requested C-style APIs use `extern "C"`, opaque handles, C-compatible data, and no STL/templates/references/overloads/exceptions in the C ABI;
 - internal implementation may use C++17;
 - public headers are stable and minimal;
 - ownership/lifetime/threading/error behavior must be documented;
-- SDK-owned memory is released through SDK APIs;
+- SDK-owned memory is released through SDK APIs when the SDK allocates memory for callers;
 - install rules and CMake package exports are provided when distributed.
 
 ---
@@ -176,10 +176,10 @@ Rules:
 - Variables: follow project style; portable default is `lower_snake_case`.
 - Class members: trailing underscore.
 - Internal constants: `kPascalCase`.
-- Exported C functions: lower snake case with SDK prefix, e.g. `game_sdk_create`.
-- C ABI constants and enum values: uppercase SDK-prefixed names.
-- Namespaces: lowercase internal namespaces.
-- No namespaces in exported C ABI.
+- Exported C-style functions, when explicitly requested: lower snake case with SDK prefix, e.g. `game_sdk_create`.
+- C-style API constants and enum values: uppercase SDK-prefixed names.
+- Namespaces: lowercase internal or public C++ namespaces as the project requires.
+- No namespaces in exported C ABI when a C-style API is explicitly requested.
 - Macros: uppercase snake case and minimized.
 - Never use `using namespace` in public headers.
 
@@ -209,9 +209,21 @@ Portable defaults:
 
 ## 8. Public SDK API rules
 
-Public exported SDK functions must use C ABI.
+Default public SDK work exports C++ headers and the required shared-library symbols. Do not force a C ABI when the user only asks for a C++ SDK, native library, public header, or exported symbol.
 
-Required:
+Required for default C++ public APIs:
+
+* export macro for shared-library symbols;
+* calling convention macro when the platform or API shape requires it;
+* stable, minimal public headers;
+* ownership/lifetime documentation;
+* thread-safety documentation;
+* documented exception/result behavior;
+* explicit SDK-owned memory release rules when the SDK allocates memory for callers.
+
+Use C-style ABI rules only when the user explicitly asks for a C-style API, C ABI, C-compatible plugin surface, FFI boundary, or an integration surface such as JNI/native binding requires it.
+
+Required for explicitly requested C-style APIs:
 
 * `extern "C"`;
 * export macro;
@@ -224,7 +236,7 @@ Required:
 * thread-safety documentation;
 * no C++ ABI exposure.
 
-Prohibited in public SDK ABI:
+Prohibited in explicitly requested C-style ABI:
 
 * C++ classes;
 * STL containers;
@@ -251,7 +263,7 @@ Required documentation:
 * thread-safety;
 * error behavior.
 
-Preferred shape:
+Preferred shape for explicitly requested C-style public APIs:
 
 ```cpp
 #pragma once
@@ -352,13 +364,15 @@ dumpbin /EXPORTS game_sdk.dll
 
 ## 12. Error handling
 
-Public C API:
+Default C++ public APIs follow the repository error policy and document exception/result behavior.
 
-* returns explicit result codes;
-* validates pointer arguments;
-* documents nullability;
-* catches internal exceptions if exceptions are allowed;
-* never lets exceptions cross ABI boundaries.
+Explicitly requested C-style APIs:
+
+* return explicit result codes;
+* validate pointer arguments;
+* document nullability;
+* catch internal exceptions if exceptions are allowed internally;
+* never let exceptions cross ABI boundaries.
 
 Portable result enum pattern:
 
@@ -459,7 +473,14 @@ target_compile_features(game_sdk PUBLIC cxx_std_17)
 
 CMake checklist:
 
+* the project has three first-class AI-coding facilities: a unit-test submodule, an example-code submodule, and a documentation submodule;
+* the default facility names are `tests/`, `examples/`, and `doc/`; if local names differ, the mapping is explicit and equivalent;
+* missing project-level unit-test/example/documentation facilities are treated as setup blockers before production code changes;
+* the project has a `scripts/workflow.py` CLI exposing `configure`, `build`, `test`, `unit`, `examples`, `lint`, `format`, `tidy`, and `workflow` subcommands;
 * each module is a target;
+* each C++ module directory contains module-local `tests/` and `examples/` subdirectories, or an explicit exception rationale is documented;
+* module-local unit tests live under `tests/` and prefer GoogleTest unless repository-local policy chooses a different C++ test framework;
+* module-local example code lives under `examples/` and demonstrates the module's intended public or integration-facing usage;
 * usage requirements are scoped;
 * public/private/interface dependencies are correct;
 * install rules exist for distributed SDKs;
@@ -483,6 +504,7 @@ game_project/
   include/game_sdk/
   src/
   modules/
+  doc/
   examples/
   tests/
   tools/
@@ -492,6 +514,37 @@ game_project/
   .editorconfig
   .gitattributes
 ```
+
+For AI-assisted C++ coding, `tests/`, `examples/`, `doc/`, and `scripts/` are mandatory engineering facilities, not optional niceties. `tests/` is the unit-test submodule and should be wired to GoogleTest by default. `examples/` is the runnable example-code submodule and should contain sample programs that exercise real intended usage. `doc/` is the documentation submodule and should primarily store architecture design documents, module-boundary explanations, and key technical decisions. `scripts/` should contain the canonical local-development and CI workflow entry point at `scripts/workflow.py`. The canonical entry point must not be a `.ps1`, `.bat`, or `.sh` script; platform-specific wrappers may exist only as optional thin delegates to the Python CLI. If a project uses different local names for non-script facilities, document the name mapping before editing production code.
+
+The `scripts/workflow.py` CLI must support `-h`/`--help` and expose stable subcommands named:
+
+```text
+configure
+build
+test
+unit
+examples
+lint
+format
+tidy
+workflow
+```
+
+These command names form the portable integration contract. Higher-level Python orchestration should be able to call them across generated modules without hand-written command adapters.
+
+Recommended module-local layout:
+
+```text
+modules/<module_name>/
+  CMakeLists.txt
+  include/
+  src/
+  tests/      # GoogleTest unit tests by default
+  examples/   # runnable sample code for the module
+```
+
+Use the module-local `tests/` directory for unit tests and prefer GoogleTest as the default C++ unit-test framework. Use the module-local `examples/` directory for runnable examples that show intended usage. If a module legitimately has no meaningful unit-test or example surface, document the exception explicitly instead of omitting the directory silently. This module-level exception does not remove the project-level requirement to maintain working unit-test and example facilities.
 
 ---
 
@@ -550,6 +603,10 @@ Recommended command:
 ctest --test-dir build --output-on-failure
 ```
 
+When a module is added or restructured, verify that its `tests/` directory is wired into the build/test flow and that its `examples/` directory contains at least one runnable sample or a documented exception.
+
+Before non-trivial AI-assisted coding, verify the project-level unit-test facility exists, is buildable, and runs through CTest or the local test runner. Prefer GoogleTest for C++ unit tests unless the repository has already standardized on another framework. Also verify the example facility exists and can build/run at least one representative example. Verify the `doc/` facility exists and contains architecture design documentation for the SDK or native library surface. Verify `scripts/workflow.py` prints help with `-h`/`--help` and exposes the standard subcommands.
+
 ---
 
 ## 19. Output template
@@ -563,9 +620,11 @@ For generated C++ SDK work:
 
 ## Files
 
+Include project-level unit-test/example/documentation/Python-workflow facilities. Include module-local `tests/` and `examples/` directories for C++ modules, or state the blocker/exception rationale.
+
 ## Code / CMake
 
-## ABI notes
+## Public API/export notes
 
 ## Ownership and lifetime
 
@@ -604,12 +663,11 @@ APPROVE / REJECT / NEEDS INFO
 
 Do not generate:
 
-* exported C++ classes as SDK ABI;
-* exported STL containers;
-* exported exceptions;
-* exported templates;
-* exported references;
-* overloaded exported functions;
+* forcing C ABI for ordinary C++ public-header/export work;
+* exposing unstable implementation details in public headers;
+* undocumented exported symbols;
+* throwing uncaught exceptions across a C ABI boundary;
+* using STL/templates/references/overloads/exceptions in an explicitly requested C-style ABI;
 * unchecked pointer arguments;
 * ignored error codes;
 * swallowed exceptions;
@@ -659,7 +717,7 @@ Expected:
 
 * Strict SDK mode;
 * opaque handle;
-* C ABI;
+* C ABI because the prompt explicitly asks for a public C API;
 * export macro;
 * result codes;
 * Doxygen ownership and thread-safety docs;
