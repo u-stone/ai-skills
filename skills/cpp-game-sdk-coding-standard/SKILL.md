@@ -241,7 +241,7 @@ If a repository-specific rule conflicts with this portable standard, the reposit
 * Do not apply project warning-as-error flags to third-party code.
 * Prefer imported/prebuilt targets for large compiled dependencies.
 * Use FetchContent only for small, header-only, test-only, or fast/stable dependencies.
-* IDE-facing targets should list local headers in `target_sources(...)`.
+* Every target's `CMakeLists.txt` **must** list **all** target-related files — headers and sources — in `target_sources()`. Use `source_group()` to organize them into logical folders. This guarantees every file appears in the IDE project tree when the solution is generated. When a new `.h` or `.cpp` is added, update `CMakeLists.txt` in the same commit.
 
 ---
 
