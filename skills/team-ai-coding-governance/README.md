@@ -2,11 +2,6 @@
 
 A shareable OpenCode skill package for team-wide AI-assisted coding governance.
 
-It replaces the previous split between:
-
-- `agentic-project-playbook`
-- `portable-authoring-protocol`
-
 The new skill is language-neutral by default and is meant to be used across projects and teams. It defines how AI agents should start coding work, decide source-of-truth precedence, add tests/examples/docs, verify no-warning/no-error builds, and keep git history clean.
 
 ---
